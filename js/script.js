@@ -199,7 +199,8 @@ const contenedorDestacados = document.getElementById("torneos-destacados");
 
 if (contenedorDestacados !== null) {
     const torneosDestacados = torneos.filter(function (torneo) {
-        return torneo.estado === "Abierto" || torneo.estado === "En curso";
+        return (torneo.estado === "Abierto" || torneo.estado === "En curso")
+            && torneo.id !== 2;
     });
 
     torneosDestacados.forEach(function (torneo) {

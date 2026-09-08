@@ -47,3 +47,16 @@ El proyecto se mantiene mediante Git y GitHub, con commits que registran los ava
 - Mensaje informativo cuando no existen resultados.
 - Validación de apodo, correo electrónico y contraseña.
 - Restricciones para inscripciones repetidas, equipos inactivos, sanciones y cupos.
+## Sitio publicado
+
+La aplicación se encuentra disponible en:
+
+https://itskevin02.github.io/Ea-Sports-Frontend/
+
+## Funcionalidades principales
+
+- Navegación entre seis vistas.
+- Catálogo de torneos generado con JavaScript y DOM.
+- Filtros por juego, estado, fechas y nombre.
+- Formularios de inscripción, gestión de equipo y perfil.
+- Validaciones y mensajes personalizados.
