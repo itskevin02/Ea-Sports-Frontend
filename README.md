@@ -41,6 +41,12 @@ Este proyecto corresponde a la base de la Evaluación Parcial 1 y fue desarrolla
 El proyecto se mantiene mediante Git y GitHub, con commits que registran los avances realizados durante el desarrollo.
 
 
+## Pruebas realizadas
+
+- Filtros por juego, estado, fecha y nombre.
+- Mensaje informativo cuando no existen resultados.
+- Validación de apodo, correo electrónico y contraseña.
+- Restricciones para inscripciones repetidas, equipos inactivos, sanciones y cupos.
 ## Sitio publicado
 
 La aplicación se encuentra disponible en:
