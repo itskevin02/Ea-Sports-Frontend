@@ -39,3 +39,18 @@ Este proyecto corresponde a la base de la Evaluación Parcial 1 y fue desarrolla
 ## Repositorio
 
 El proyecto se mantiene mediante Git y GitHub, con commits que registran los avances realizados durante el desarrollo.
+
+
+## Sitio publicado
+
+La aplicación se encuentra disponible en:
+
+https://itskevin02.github.io/Ea-Sports-Frontend/
+
+## Funcionalidades principales
+
+- Navegación entre seis vistas.
+- Catálogo de torneos generado con JavaScript y DOM.
+- Filtros por juego, estado, fechas y nombre.
+- Formularios de inscripción, gestión de equipo y perfil.
+- Validaciones y mensajes personalizados.
