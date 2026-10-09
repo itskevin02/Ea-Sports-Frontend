@@ -1,7 +1,9 @@
 
 import { useState } from 'react'
 import BarraNavegacion from './components/BarraNavegacion'
+import Perfil from './pages/Perfil'
 import './App.css'
+
 
 function App() {
   const [vistaActual, setVistaActual] = useState('inicio')
@@ -83,8 +85,11 @@ function App() {
 
             </div>
           </>
+        ) : vistaActual === 'perfil' ? (
+          <Perfil />
         ) : (
           <div className="card">
+
             <div className="card-body">
               <h2 className="h4">{paginas[vistaActual]}</h2>
               <p className="text-secondary mb-0">
