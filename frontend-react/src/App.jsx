@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Navbar } from './Components/Navbar';
-import { Inicio } from './pages/inicio';
-import { Torneos } from './pages/Torneos';
+import { Inicio } from './Pages/Inicio';
+import { Torneos } from './Pages/Torneos';
 
 function App() {
   return (
@@ -16,5 +16,5 @@ function App() {
     </Router>
   );
 }
-
+<Route path="/torneos/:id" element={<DetalleTorneo />} />
 export default App;
