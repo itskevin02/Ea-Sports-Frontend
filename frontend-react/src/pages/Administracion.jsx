@@ -1,24 +1,22 @@
 
 import { useState, useEffect } from 'react'
 import validarPerfil from '../logica/validarPerfil'
+import registrarJugador from '../logica/registrarJugador'
 
-function cargarJugadores() {
-  try {
-    const datos = localStorage.getItem('esports_jugadores')
+import {
+  actualizarJugador,
+  eliminarJugador as eliminarJugadorDeLista
+} from '../logica/gestionarJugadores'
 
-    if (datos) {
-      const lista = JSON.parse(datos)
-      return Array.isArray(lista) ? lista : []
-    }
-  } catch {
-    return []
-  }
-
-  return []
-}
+import {
+  cargarJugadores,
+  guardarJugadores
+} from '../logica/almacenamientoJugadores'
 
 function Administracion() {
-  const [jugadores, setJugadores] = useState(cargarJugadores)
+  const [jugadores, setJugadores] = useState(
+    () => cargarJugadores(localStorage)
+  )
 
   const [formulario, setFormulario] = useState({
     apodo: '',
@@ -30,11 +28,9 @@ function Administracion() {
   const [modo, setModo] = useState('nuevo')
   const [idEditando, setIdEditando] = useState(null)
 
+  // Guardar los jugadores en el navegador
   useEffect(() => {
-    localStorage.setItem(
-      'esports_jugadores',
-      JSON.stringify(jugadores)
-    )
+    guardarJugadores(jugadores, localStorage)
   }, [jugadores])
 
   function cambiarCampo(evento) {
@@ -70,6 +66,28 @@ function Administracion() {
     const apodo = formulario.apodo.trim()
     const correo = formulario.correo.trim()
 
+    // Registrar un nuevo jugador
+    if (modo === 'nuevo') {
+      const resultado = registrarJugador(
+        jugadores,
+        apodo,
+        correo
+      )
+
+      setErrores(resultado.errores)
+
+      if (Object.keys(resultado.errores).length > 0) {
+        setMensaje('')
+        return
+      }
+
+      setJugadores(resultado.jugadores)
+      setMensaje('Jugador registrado correctamente.')
+      limpiarFormulario()
+      return
+    }
+
+    // Validar los datos antes de editar
     const nuevosErrores = validarPerfil(
       apodo,
       correo,
@@ -103,30 +121,16 @@ function Administracion() {
       return
     }
 
-    if (modo === 'editar') {
-      const jugadoresActualizados = jugadores.map((jugador) =>
-        jugador.id === idEditando
-          ? { ...jugador, apodo, correo }
-          : jugador
-      )
+    // Actualizar el jugador seleccionado
+    const jugadoresActualizados = actualizarJugador(
+      jugadores,
+      idEditando,
+      apodo,
+      correo
+    )
 
-      setJugadores(jugadoresActualizados)
-      setMensaje('Jugador actualizado correctamente.')
-    } else {
-      const nuevoId = jugadores.length > 0
-        ? Math.max(...jugadores.map((jugador) => jugador.id)) + 1
-        : 1
-
-      const nuevoJugador = {
-        id: nuevoId,
-        apodo,
-        correo
-      }
-
-      setJugadores([...jugadores, nuevoJugador])
-      setMensaje('Jugador registrado correctamente.')
-    }
-
+    setJugadores(jugadoresActualizados)
+    setMensaje('Jugador actualizado correctamente.')
     limpiarFormulario()
   }
 
@@ -156,8 +160,10 @@ function Administracion() {
       return
     }
 
-    const jugadoresActualizados = jugadores.filter(
-      (registro) => registro.id !== jugador.id
+    // Eliminar solamente el jugador seleccionado
+    const jugadoresActualizados = eliminarJugadorDeLista(
+      jugadores,
+      jugador.id
     )
 
     setJugadores(jugadoresActualizados)
@@ -167,7 +173,9 @@ function Administracion() {
 
   return (
     <div>
-      <h2 className="mb-3">Panel de Administración</h2>
+      <h2 className="mb-3">
+        Panel de Administración
+      </h2>
 
       <p className="text-white-50 mb-4">
         Gestiona los jugadores registrados en eSports Arena Manager.
@@ -185,7 +193,10 @@ function Administracion() {
             <div className="row g-3">
 
               <div className="col-12 col-md-6">
-                <label htmlFor="adminApodo" className="form-label">
+                <label
+                  htmlFor="adminApodo"
+                  className="form-label"
+                >
                   Apodo
                 </label>
 
@@ -210,7 +221,10 @@ function Administracion() {
               </div>
 
               <div className="col-12 col-md-6">
-                <label htmlFor="adminCorreo" className="form-label">
+                <label
+                  htmlFor="adminCorreo"
+                  className="form-label"
+                >
                   Correo electrónico
                 </label>
 
@@ -233,7 +247,10 @@ function Administracion() {
             </div>
 
             <div className="d-flex flex-wrap gap-2 mt-4">
-              <button type="submit" className="btn btn-primary">
+              <button
+                type="submit"
+                className="btn btn-primary"
+              >
                 {modo === 'editar'
                   ? 'Guardar cambios'
                   : 'Registrar jugador'}
@@ -261,7 +278,9 @@ function Administracion() {
 
       <div className="card">
         <div className="card-body">
-          <h3 className="h5 mb-3">Jugadores registrados</h3>
+          <h3 className="h5 mb-3">
+            Jugadores registrados
+          </h3>
 
           <p className="text-secondary">
             Total de jugadores: {jugadores.length}
