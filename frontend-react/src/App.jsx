@@ -2,8 +2,8 @@
 import { useState } from 'react'
 import BarraNavegacion from './components/BarraNavegacion'
 import Perfil from './pages/Perfil'
+import Administracion from './pages/Administracion'
 import './App.css'
-
 
 function App() {
   const [vistaActual, setVistaActual] = useState('inicio')
@@ -43,6 +43,7 @@ function App() {
                   <div className="card-body">
                     <h3 className="h5">Torneos</h3>
                     <p>Consulta los torneos disponibles.</p>
+
                     <button
                       className="btn btn-primary"
                       onClick={() => setVistaActual('torneos')}
@@ -58,6 +59,7 @@ function App() {
                   <div className="card-body">
                     <h3 className="h5">Equipos</h3>
                     <p>Gestiona equipos y jugadores.</p>
+
                     <button
                       className="btn btn-primary"
                       onClick={() => setVistaActual('equipos')}
@@ -73,6 +75,7 @@ function App() {
                   <div className="card-body">
                     <h3 className="h5">Administración</h3>
                     <p>Administra los registros del sistema.</p>
+
                     <button
                       className="btn btn-primary"
                       onClick={() => setVistaActual('administracion')}
@@ -87,11 +90,13 @@ function App() {
           </>
         ) : vistaActual === 'perfil' ? (
           <Perfil />
+        ) : vistaActual === 'administracion' ? (
+          <Administracion />
         ) : (
           <div className="card">
-
             <div className="card-body">
               <h2 className="h4">{paginas[vistaActual]}</h2>
+
               <p className="text-secondary mb-0">
                 Esta sección se implementará durante
                 la Evaluación Parcial 2.
