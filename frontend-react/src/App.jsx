@@ -1,6 +1,8 @@
 
 import { useState } from 'react'
 import BarraNavegacion from './components/BarraNavegacion'
+import Equipos from './pages/Equipos'
+import Inscripcion from './pages/Inscripcion'
 import './App.css'
 
 function App() {
@@ -9,8 +11,6 @@ function App() {
   const paginas = {
     torneos: 'Torneos disponibles',
     detalle: 'Detalle del torneo',
-    inscripcion: 'Inscripción a torneos',
-    equipos: 'Gestión de equipos',
     perfil: 'Perfil del jugador',
     administracion: 'Panel de administración'
   }
@@ -41,6 +41,7 @@ function App() {
                   <div className="card-body">
                     <h3 className="h5">Torneos</h3>
                     <p>Consulta los torneos disponibles.</p>
+
                     <button
                       className="btn btn-primary"
                       onClick={() => setVistaActual('torneos')}
@@ -56,6 +57,7 @@ function App() {
                   <div className="card-body">
                     <h3 className="h5">Equipos</h3>
                     <p>Gestiona equipos y jugadores.</p>
+
                     <button
                       className="btn btn-primary"
                       onClick={() => setVistaActual('equipos')}
@@ -71,6 +73,7 @@ function App() {
                   <div className="card-body">
                     <h3 className="h5">Administración</h3>
                     <p>Administra los registros del sistema.</p>
+
                     <button
                       className="btn btn-primary"
                       onClick={() => setVistaActual('administracion')}
@@ -83,6 +86,10 @@ function App() {
 
             </div>
           </>
+        ) : vistaActual === 'equipos' ? (
+          <Equipos />
+        ) : vistaActual === 'inscripcion' ? (
+          <Inscripcion />
         ) : (
           <div className="card">
             <div className="card-body">
