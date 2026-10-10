@@ -1,24 +1,38 @@
 
 import { useState } from 'react'
+
 import BarraNavegacion from './components/BarraNavegacion'
+
+import { Inicio } from './pages/Inicio'
+import { Torneos } from './pages/Torneos'
+import DetalleTorneo from './pages/DetalleTorneo'
+
 import Perfil from './pages/Perfil'
 import Administracion from './pages/Administracion'
+
 import './App.css'
 
 function App() {
   const [vistaActual, setVistaActual] = useState('inicio')
+  const [torneoSeleccionado, setTorneoSeleccionado] = useState(null)
 
   const paginas = {
-    torneos: 'Torneos disponibles',
-    detalle: 'Detalle del torneo',
     inscripcion: 'Inscripción a torneos',
-    equipos: 'Gestión de equipos',
-    perfil: 'Perfil del jugador',
-    administracion: 'Panel de administración'
+    equipos: 'Gestión de equipos'
+  }
+
+  function mostrarDetalle(torneo) {
+    setTorneoSeleccionado(torneo)
+    setVistaActual('detalle')
+  }
+
+  function volverATorneos() {
+    setVistaActual('torneos')
   }
 
   return (
     <div className="min-vh-100 bg-dark text-white">
+
       <BarraNavegacion
         vistaActual={vistaActual}
         cambiarVista={setVistaActual}
@@ -28,12 +42,11 @@ function App() {
 
         {vistaActual === 'inicio' ? (
           <>
-            <h2 className="mb-3">
-              Bienvenido a eSports Arena Manager
-            </h2>
+            <Inicio />
 
-            <p className="text-white-50">
-              Plataforma de gestión de torneos, equipos y jugadores.
+            <p className="text-white-50 text-center">
+              Plataforma de gestión de torneos,
+              equipos y jugadores.
             </p>
 
             <div className="row g-3 mt-3">
@@ -43,8 +56,8 @@ function App() {
                   <div className="card-body">
                     <h3 className="h5">Torneos</h3>
                     <p>Consulta los torneos disponibles.</p>
-
                     <button
+                      type="button"
                       className="btn btn-primary"
                       onClick={() => setVistaActual('torneos')}
                     >
@@ -59,8 +72,8 @@ function App() {
                   <div className="card-body">
                     <h3 className="h5">Equipos</h3>
                     <p>Gestiona equipos y jugadores.</p>
-
                     <button
+                      type="button"
                       className="btn btn-primary"
                       onClick={() => setVistaActual('equipos')}
                     >
@@ -75,10 +88,12 @@ function App() {
                   <div className="card-body">
                     <h3 className="h5">Administración</h3>
                     <p>Administra los registros del sistema.</p>
-
                     <button
+                      type="button"
                       className="btn btn-primary"
-                      onClick={() => setVistaActual('administracion')}
+                      onClick={() =>
+                        setVistaActual('administracion')
+                      }
                     >
                       Administrar
                     </button>
@@ -88,6 +103,13 @@ function App() {
 
             </div>
           </>
+        ) : vistaActual === 'torneos' ? (
+          <Torneos onVerDetalle={mostrarDetalle} />
+        ) : vistaActual === 'detalle' ? (
+          <DetalleTorneo
+            torneo={torneoSeleccionado}
+            onVolver={volverATorneos}
+          />
         ) : vistaActual === 'perfil' ? (
           <Perfil />
         ) : vistaActual === 'administracion' ? (
@@ -96,16 +118,16 @@ function App() {
           <div className="card">
             <div className="card-body">
               <h2 className="h4">{paginas[vistaActual]}</h2>
-
               <p className="text-secondary mb-0">
-                Esta sección se implementará durante
-                la Evaluación Parcial 2.
+                Esta sección se incorporará durante
+                la integración de la EP2.
               </p>
             </div>
           </div>
         )}
 
       </main>
+
     </div>
   )
 }
