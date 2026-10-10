@@ -9,7 +9,11 @@ import {
   equipoCompleto
 } from '../logica/validarInscripcion'
 
-// Jugadores de ejemplo mientras se integran los registros reales
+import { tieneSancionActiva } from '../logica/sanciones'
+
+import FormularioInscripcion from '../components/FormularioInscripcion'
+
+// Jugadores de ejemplo
 const jugadoresEjemplo = [
   { id: 9001, apodo: 'Jugador01' },
   { id: 9002, apodo: 'Jugador02' },
@@ -21,6 +25,7 @@ const jugadoresEjemplo = [
 
 const claveInscripciones = 'esports_inscripciones_ep2'
 
+// Cargar datos guardados
 function cargarDatos(clave) {
   try {
     const datos = localStorage.getItem(clave)
@@ -39,6 +44,7 @@ function cargarDatos(clave) {
   return []
 }
 
+// Cargar jugadores registrados
 function cargarJugadores() {
   const jugadores = cargarDatos('esports_jugadores')
 
@@ -49,6 +55,7 @@ function cargarJugadores() {
   return jugadoresEjemplo
 }
 
+// Obtener fecha actual
 function obtenerFechaActual() {
   const fecha = new Date()
 
@@ -60,6 +67,7 @@ function obtenerFechaActual() {
 }
 
 function Inscripcion() {
+
   const [jugadores] = useState(cargarJugadores)
 
   const [equipos] = useState(
@@ -77,26 +85,32 @@ function Inscripcion() {
   const [error, setError] = useState('')
   const [confirmacion, setConfirmacion] = useState(null)
 
-  // Utilizamos el mismo catálogo que la pantalla Torneos
+  // Torneo seleccionado
   const torneoSeleccionado = torneosData.find(
     (torneo) => torneo.id === Number(torneoId)
   )
 
-  // Mostrar solamente equipos del juego correspondiente
+  // Equipos del juego correspondiente
   const equiposDelJuego = equipos.filter(
     (equipo) =>
       torneoSeleccionado &&
       equipo.juego === torneoSeleccionado.juego
   )
 
-  // Inscripciones realizadas desde nuestra aplicación
+  // Equipo seleccionado para la inscripción
+  const equipoSeleccionado = equipos.find(
+    (equipo) =>
+      String(equipo.id) === participanteId
+  )
+
+  // Cantidad de inscripciones locales
   const inscritosLocales = inscripciones.filter(
     (registro) =>
       torneoSeleccionado &&
       registro.torneoId === torneoSeleccionado.id
   ).length
 
-  // Primera función evaluada con Jasmine
+  // Calcular cupos disponibles
   const cuposDisponibles = torneoSeleccionado
     ? calcularCuposDisponibles(
         torneoSeleccionado.cupos,
@@ -105,7 +119,7 @@ function Inscripcion() {
       )
     : 0
 
-  // Guardar automáticamente las inscripciones
+  // Guardar inscripciones
   useEffect(() => {
     localStorage.setItem(
       claveInscripciones,
@@ -113,6 +127,7 @@ function Inscripcion() {
     )
   }, [inscripciones])
 
+  // Cambiar torneo
   function cambiarTorneo(evento) {
     setTorneoId(evento.target.value)
     setTipo('')
@@ -121,6 +136,7 @@ function Inscripcion() {
     setConfirmacion(null)
   }
 
+  // Cambiar tipo de participante
   function cambiarTipo(evento) {
     setTipo(evento.target.value)
     setParticipanteId('')
@@ -128,43 +144,56 @@ function Inscripcion() {
     setConfirmacion(null)
   }
 
+  // Confirmar inscripción
   function confirmarInscripcion(evento) {
     evento.preventDefault()
 
     setError('')
     setConfirmacion(null)
 
+    // Validar torneo
     if (!torneoSeleccionado) {
       setError('Debes seleccionar un torneo.')
       return
     }
 
     if (torneoSeleccionado.estado !== 'Abierto') {
-      setError('Este torneo no está abierto para inscripciones.')
+      setError(
+        'Este torneo no está abierto para inscripciones.'
+      )
       return
     }
 
-    // Segunda función evaluada con Jasmine
+    // Validar fecha
     if (
       inscripcionFueraDePlazo(
         obtenerFechaActual(),
         torneoSeleccionado.fechaCierre
       )
     ) {
-      setError('El plazo de inscripción de este torneo terminó.')
+      setError(
+        'El plazo de inscripción de este torneo terminó.'
+      )
       return
     }
 
+    // Validar cupos
     if (cuposDisponibles <= 0) {
-      setError('No quedan cupos disponibles para este torneo.')
+      setError(
+        'No quedan cupos disponibles para este torneo.'
+      )
       return
     }
 
+    // Validar tipo
     if (tipo === '') {
-      setError('Debes seleccionar un tipo de participante.')
+      setError(
+        'Debes seleccionar un tipo de participante.'
+      )
       return
     }
 
+    // Validar participante
     if (participanteId === '') {
       setError('Debes seleccionar un participante.')
       return
@@ -175,7 +204,9 @@ function Inscripcion() {
     let participante = null
     let nombreParticipante = ''
 
+    // Inscripción por equipo
     if (tipo === 'equipo') {
+
       participante = equipos.find(
         (equipo) => equipo.id === idSeleccionado
       )
@@ -186,21 +217,31 @@ function Inscripcion() {
       }
 
       if (participante.juego !== torneoSeleccionado.juego) {
-        setError('El equipo no corresponde al juego del torneo.')
+        setError(
+          'El equipo no corresponde al juego del torneo.'
+        )
         return
       }
 
       if (!participante.activo) {
-        setError('El equipo está inactivo y no puede inscribirse.')
+        setError(
+          'El equipo está inactivo y no puede inscribirse.'
+        )
         return
       }
 
-      if (participante.sancionActiva === true) {
+      // Validar sanciones
+      if (
+        tieneSancionActiva(
+          participante,
+          obtenerFechaActual()
+        )
+      ) {
         setError('El equipo tiene una sanción vigente.')
         return
       }
 
-      // Tercera función evaluada con Jasmine
+      // Validar integrantes del equipo
       if (
         !equipoCompleto(
           participante,
@@ -216,6 +257,7 @@ function Inscripcion() {
       nombreParticipante = participante.nombre
 
     } else if (tipo === 'jugador') {
+
       participante = jugadores.find(
         (jugador) => jugador.id === idSeleccionado
       )
@@ -225,12 +267,21 @@ function Inscripcion() {
         return
       }
 
+      // No permitir jugadores individuales en torneos de equipo
       if (torneoSeleccionado.integrantesMinimos > 1) {
-        setError('Este torneo requiere inscripción por equipo.')
+        setError(
+          'Este torneo requiere inscripción por equipo.'
+        )
         return
       }
 
-      if (participante.sancionActiva === true) {
+      // Validar sanciones del jugador
+      if (
+        tieneSancionActiva(
+          participante,
+          obtenerFechaActual()
+        )
+      ) {
         setError('El jugador tiene una sanción vigente.')
         return
       }
@@ -242,7 +293,7 @@ function Inscripcion() {
       return
     }
 
-    // Evitar que el mismo participante se inscriba dos veces
+    // Evitar inscripciones duplicadas
     const inscripcionRepetida = inscripciones.some(
       (registro) =>
         registro.torneoId === torneoSeleccionado.id &&
@@ -251,10 +302,13 @@ function Inscripcion() {
     )
 
     if (inscripcionRepetida) {
-      setError('Este participante ya está inscrito en el torneo.')
+      setError(
+        'Este participante ya está inscrito en el torneo.'
+      )
       return
     }
 
+    // Generar nuevo ID
     const nuevoId = inscripciones.length > 0
       ? Math.max(
           ...inscripciones.map((registro) => registro.id)
@@ -271,6 +325,7 @@ function Inscripcion() {
       fecha: obtenerFechaActual()
     }
 
+    // Guardar nueva inscripción
     setInscripciones([
       ...inscripciones,
       nuevaInscripcion
@@ -281,7 +336,10 @@ function Inscripcion() {
 
   return (
     <div>
-      <h2 className="mb-3">Inscripción a Torneos</h2>
+
+      <h2 className="mb-3">
+        Inscripción a Torneos
+      </h2>
 
       <p className="text-white-50 mb-4">
         Selecciona un torneo e inscribe a un jugador o equipo.
@@ -293,6 +351,7 @@ function Inscripcion() {
         de eSports Arena Manager.
       </div>
 
+      {/* FORMULARIO */}
       <div className="card mb-4">
         <div className="card-body">
 
@@ -300,10 +359,20 @@ function Inscripcion() {
             Formulario de inscripción
           </h3>
 
-          <form onSubmit={confirmarInscripcion} noValidate>
+          <FormularioInscripcion
+            tipo={tipo}
+            equipoSeleccionado={equipoSeleccionado}
+            integrantesMinimos={
+              torneoSeleccionado?.integrantesMinimos ?? 1
+            }
+            onConfirmar={confirmarInscripcion}
+          >
+
             <div className="row g-3">
 
+              {/* SELECCIONAR TORNEO */}
               <div className="col-12 col-md-6">
+
                 <label
                   htmlFor="torneoInscripcion"
                   className="form-label"
@@ -329,14 +398,18 @@ function Inscripcion() {
                       {torneo.nombre}
                     </option>
                   ))}
+
                 </select>
 
                 <small className="text-secondary">
                   Selecciona el torneo en el que deseas participar.
                 </small>
+
               </div>
 
+              {/* TIPO DE PARTICIPANTE */}
               <div className="col-12 col-md-6">
+
                 <label
                   htmlFor="tipoParticipante"
                   className="form-label"
@@ -361,11 +434,15 @@ function Inscripcion() {
                   <option value="equipo">
                     Equipo
                   </option>
+
                 </select>
+
               </div>
 
+              {/* REQUISITOS DEL TORNEO */}
               {torneoSeleccionado && (
                 <div className="col-12">
+
                   <div className="border rounded p-3 bg-light">
 
                     <h4 className="h6">
@@ -403,11 +480,14 @@ function Inscripcion() {
                     </p>
 
                   </div>
+
                 </div>
               )}
 
+              {/* SELECCIONAR JUGADOR O EQUIPO */}
               {tipo !== '' && (
                 <div className="col-12">
+
                   <label
                     htmlFor="participanteInscripcion"
                     className="form-label"
@@ -458,20 +538,18 @@ function Inscripcion() {
                         en Gestión de Equipos.
                       </small>
                     )}
+
                 </div>
               )}
 
             </div>
 
-            <button
-              type="submit"
-              className="btn btn-primary mt-4"
-            >
-              Confirmar inscripción
-            </button>
+            {/* El botón Confirmar inscripción
+                lo agrega FormularioInscripcion */}
 
-          </form>
+          </FormularioInscripcion>
 
+          {/* MENSAJES DE ERROR */}
           {error && (
             <div className="alert alert-danger mt-3">
               {error}
@@ -481,6 +559,7 @@ function Inscripcion() {
         </div>
       </div>
 
+      {/* CONFIRMACIÓN */}
       {confirmacion && (
         <div className="alert alert-success">
 
@@ -511,6 +590,7 @@ function Inscripcion() {
         </div>
       )}
 
+      {/* INSCRIPCIONES REGISTRADAS */}
       <div className="card">
         <div className="card-body">
 
@@ -530,6 +610,7 @@ function Inscripcion() {
             <div className="table-responsive">
 
               <table className="table table-striped align-middle">
+
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -541,16 +622,25 @@ function Inscripcion() {
                 </thead>
 
                 <tbody>
+
                   {inscripciones.map((registro) => (
                     <tr key={registro.id}>
+
                       <td>{registro.id}</td>
+
                       <td>{registro.torneo}</td>
+
                       <td>{registro.tipo}</td>
+
                       <td>{registro.participante}</td>
+
                       <td>{registro.fecha}</td>
+
                     </tr>
                   ))}
+
                 </tbody>
+
               </table>
 
             </div>
@@ -558,6 +648,7 @@ function Inscripcion() {
 
         </div>
       </div>
+
     </div>
   )
 }
