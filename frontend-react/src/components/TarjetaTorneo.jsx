@@ -1,13 +1,24 @@
 ﻿
+import { obtenerInscritosActuales } from '../logica/contarInscripciones'
+
 export const TarjetaTorneo = ({ torneo, onVerDetalle }) => {
+
+  const totalInscritos = obtenerInscritosActuales(torneo)
+
   return (
     <div className="col-md-4 mb-4">
+
       <div className="card h-100 shadow-sm border-0">
 
         <img
           src={torneo.imagen}
           className="card-img-top"
           alt={torneo.nombre}
+          style={{
+            height: '180px',
+            width: '100%',
+            objectFit: 'cover'
+          }}
         />
 
         <div className="card-body d-flex flex-column">
@@ -41,7 +52,7 @@ export const TarjetaTorneo = ({ torneo, onVerDetalle }) => {
           <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
 
             <small className="text-muted">
-              Cupos: {torneo.inscritos}/{torneo.cupos}
+              Cupos: {totalInscritos}/{torneo.cupos}
             </small>
 
             <button
@@ -60,6 +71,7 @@ export const TarjetaTorneo = ({ torneo, onVerDetalle }) => {
 
         </div>
       </div>
+
     </div>
   )
 }

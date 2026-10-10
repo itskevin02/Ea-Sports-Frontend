@@ -1,38 +1,87 @@
-﻿export const torneosData = [
+﻿
+export const torneosData = [
   {
     id: 1,
-    nombre: "Copa EA Sports FC 24",
-    juego: "EA Sports FC",
-    plataforma: "PS5 / Xbox Series / PC",
-    fechaInicio: "2026-11-15",
+    nombre: 'Copa EA Sports FC 26',
+    juego: 'EA Sports FC',
+    plataforma: 'PS5 / Xbox Series / PC',
+    fechaInicio: '2026-11-15',
+    fechaCierre: '2026-11-10',
     cupos: 32,
     inscritos: 20,
-    estado: "Abierto",
-    descripcion: "Torneo oficial de f├║tbol digital. Modalidad 1v1 con fase de grupos y eliminatoria directa.",
-    imagen: "https://via.placeholder.com/300x180?text=EA+Sports+FC"
+    integrantesMinimos: 1,
+    estado: 'Abierto',
+    descripcion: 'Torneo de fútbol digital FC26. Modalidad 1v1 con fase de grupos y eliminatoria directa.',
+    imagen: '/torneos/fc26.jpg'
   },
   {
     id: 2,
-    nombre: "Liga Madden NFL Master",
-    juego: "Madden NFL",
-    plataforma: "PS5 / Xbox Series",
-    fechaInicio: "2026-12-01",
+    nombre: 'Liga Madden NFL Master',
+    juego: 'Madden NFL',
+    plataforma: 'PS5 / Xbox Series',
+    fechaInicio: '2026-12-01',
+    fechaCierre: '2026-11-30',
     cupos: 16,
     inscritos: 16,
-    estado: "Cerrado",
-    descripcion: "Competencia de alto nivel de f├║tbol americano. Modalidad franquicia r├ípida.",
-    imagen: "https://via.placeholder.com/300x180?text=Madden+NFL"
+    integrantesMinimos: 1,
+    estado: 'Cerrado',
+    descripcion: 'Competencia de alto nivel de fútbol americano. Modalidad franquicia rápida.',
+    imagen: '/torneos/madden.jpg'
   },
   {
     id: 3,
-    nombre: "Championship Apex Legends",
-    juego: "Apex Legends",
-    plataforma: "PC",
-    fechaInicio: "2026-11-20",
+    nombre: 'Championship Apex Legends',
+    juego: 'Apex Legends',
+    plataforma: 'PC',
+    fechaInicio: '2026-11-20',
+    fechaCierre: '2026-11-19',
     cupos: 20,
     inscritos: 12,
-    estado: "Abierto",
-    descripcion: "Torneo por tr├¡os en Battle Royale. 5 partidas para acumular puntos por bajas y posici├│n.",
-    imagen: "https://via.placeholder.com/300x180?text=Apex+Legends"
+    integrantesMinimos: 3,
+    estado: 'Abierto',
+    descripcion: 'Torneo por tríos en Battle Royale. Cinco partidas para acumular puntos por bajas y posición.',
+    imagen: '/torneos/apex.jpg'
+  },
+  {
+    id: 4,
+    nombre: 'Copa Fortnite Dúos',
+    juego: 'Fortnite',
+    plataforma: 'PC / Consolas',
+    fechaInicio: '2026-12-22',
+    fechaCierre: '2026-12-20',
+    cupos: 16,
+    inscritos: 8,
+    integrantesMinimos: 2,
+    estado: 'Abierto',
+    descripcion: 'Competencia de Fortnite en modalidad dúos.',
+    imagen: '/torneos/fortnite.jpg'
+  },
+  {
+    id: 5,
+    nombre: 'Liga VALORANT',
+    juego: 'VALORANT',
+    plataforma: 'PC',
+    fechaInicio: '2026-12-18',
+    fechaCierre: '2026-12-15',
+    cupos: 8,
+    inscritos: 8,
+    integrantesMinimos: 5,
+    estado: 'Abierto',
+    descripcion: 'Competencia de VALORANT para equipos de cinco jugadores.',
+    imagen: '/torneos/valorant.jpg'
+  },
+  {
+    id: 6,
+    nombre: 'Torneo Counter-Strike 2',
+    juego: 'Counter-Strike 2',
+    plataforma: 'PC',
+    fechaInicio: '2026-11-02',
+    fechaCierre: '2026-09-30',
+    cupos: 12,
+    inscritos: 4,
+    integrantesMinimos: 5,
+    estado: 'Abierto',
+    descripcion: 'Competencia de Counter-Strike 2 para equipos de cinco jugadores.',
+    imagen: '/torneos/cs2.jpg'
   }
-];
+]

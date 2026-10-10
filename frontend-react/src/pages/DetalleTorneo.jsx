@@ -1,25 +1,42 @@
 
+import { obtenerInscritosActuales } from '../logica/contarInscripciones'
+
 function DetalleTorneo({ torneo, onVolver }) {
+
   if (!torneo) {
     return (
       <div className="card">
         <div className="card-body">
-          <h2 className="h4">Torneo no encontrado</h2>
+
+          <h2 className="h4">
+            Torneo no encontrado
+          </h2>
 
           <button
+            type="button"
             className="btn btn-primary mt-3"
             onClick={onVolver}
           >
             Volver a Torneos
           </button>
+
         </div>
       </div>
     )
   }
 
+  const totalInscritos = obtenerInscritosActuales(torneo)
+  const disponibles = Math.max(
+    0,
+    torneo.cupos - totalInscritos
+  )
+
   return (
     <div>
-      <h2 className="mb-4">Detalle del Torneo</h2>
+
+      <h2 className="mb-4">
+        Detalle del Torneo
+      </h2>
 
       <div className="card">
         <div className="card-body">
@@ -37,11 +54,13 @@ function DetalleTorneo({ torneo, onVolver }) {
           </p>
 
           <p>
-            <strong>Fecha de inicio:</strong> {torneo.fechaInicio}
+            <strong>Fecha de inicio:</strong>{' '}
+            {torneo.fechaInicio}
           </p>
 
           <p>
             <strong>Estado:</strong>{' '}
+
             <span
               className={`badge ${
                 torneo.estado === 'Abierto'
@@ -55,7 +74,12 @@ function DetalleTorneo({ torneo, onVolver }) {
 
           <p>
             <strong>Inscritos:</strong>{' '}
-            {torneo.inscritos} de {torneo.cupos}
+            {totalInscritos} de {torneo.cupos}
+          </p>
+
+          <p>
+            <strong>Cupos disponibles:</strong>{' '}
+            {disponibles}
           </p>
 
           <p>
@@ -76,6 +100,7 @@ function DetalleTorneo({ torneo, onVolver }) {
 
         </div>
       </div>
+
     </div>
   )
 }
