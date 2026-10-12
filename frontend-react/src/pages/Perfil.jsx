@@ -1,37 +1,38 @@
 
 import { useState, useEffect } from 'react'
+
 import validarPerfil from '../logica/validarPerfil'
+import { torneosData } from '../data/torneos'
 
-const equiposJugador = [
-  { id: 1, nombre: 'Equipo 1', juego: 'Counter-Strike 2' },
-  { id: 2, nombre: 'Equipo 2', juego: 'VALORANT' }
-]
+// Recuperar listas guardadas en el navegador
+function cargarRegistros(clave) {
+  try {
+    const datos = localStorage.getItem(clave)
 
-const historialTorneos = [
-  { id: 1, torneo: 'Torneo 1', resultado: 'Participación registrada' },
-  { id: 2, torneo: 'Torneo 2', resultado: 'Participación registrada' }
-]
+    if (datos) {
+      const lista = JSON.parse(datos)
 
-const estadisticas = {
-  victorias: 12,
-  derrotas: 5
+      if (Array.isArray(lista)) {
+        return lista
+      }
+    }
+  } catch {
+    return []
+  }
+
+  return []
 }
 
-const sanciones = [
-  { id: 1, estado: 'Cumplida', descripcion: 'Sanción 1' }
-]
-
-// Recupera los jugadores guardados en el navegador
+// Cargar los perfiles registrados
 function cargarJugadores() {
+  const datos = localStorage.getItem('esports_jugadores')
+
+  if (datos !== null) {
+    return cargarRegistros('esports_jugadores')
+  }
+
+  // Compatibilidad con el perfil de la EP1
   try {
-    const datos = localStorage.getItem('esports_jugadores')
-
-    if (datos !== null) {
-      const lista = JSON.parse(datos)
-      return Array.isArray(lista) ? lista : []
-    }
-
-    // Recupera el perfil anterior si existe
     const perfilAnterior = localStorage.getItem('esports_perfil')
 
     if (perfilAnterior) {
@@ -53,6 +54,7 @@ function cargarJugadores() {
 }
 
 function Perfil() {
+
   const [jugadores, setJugadores] = useState(cargarJugadores)
 
   const [idSeleccionado, setIdSeleccionado] = useState(
@@ -73,11 +75,83 @@ function Perfil() {
   const [errores, setErrores] = useState({})
   const [mensaje, setMensaje] = useState('')
 
+  // Jugador que estamos consultando
   const perfilActual = jugadores.find(
     (jugador) => jugador.id === idSeleccionado
   )
 
-  // Guarda la lista completa de jugadores
+  // Leer equipos e inscripciones actuales
+  const equipos = cargarRegistros('esports_equipos')
+  const inscripciones = cargarRegistros('esports_inscripciones_ep2')
+
+  // Obtener los equipos a los que pertenece el jugador
+  const equiposJugador = perfilActual
+    ? equipos.filter((equipo) => {
+
+        const esCapitan =
+          String(equipo.capitanId) ===
+          String(perfilActual.id)
+
+        const esIntegrante =
+          Array.isArray(equipo.integrantes) &&
+          equipo.integrantes.some(
+            (integrante) =>
+              String(integrante.id) ===
+              String(perfilActual.id)
+          )
+
+        return esCapitan || esIntegrante
+      })
+    : []
+
+  // Obtener las inscripciones del jugador
+  const historialTorneos = perfilActual
+    ? inscripciones.filter((inscripcion) => {
+
+        // Una inscripción individual
+        const inscripcionIndividual =
+          inscripcion.tipo === 'jugador' &&
+          String(inscripcion.participanteId) ===
+          String(perfilActual.id)
+
+        // Una inscripción realizada mediante su equipo
+        const inscripcionEquipo =
+          inscripcion.tipo === 'equipo' &&
+          equiposJugador.some(
+            (equipo) =>
+              String(equipo.id) ===
+              String(inscripcion.participanteId)
+          )
+
+        const torneo = torneosData.find(
+          (registro) =>
+            Number(registro.id) ===
+            Number(inscripcion.torneoId)
+        )
+
+        // Respetar la privacidad de torneos abiertos
+        const inscripcionesCerradas =
+          torneo &&
+          (
+            torneo.estado === 'Cerrado' ||
+            torneo.estado === 'En curso' ||
+            torneo.estado === 'Finalizado'
+          )
+
+        return (
+          (inscripcionIndividual || inscripcionEquipo) &&
+          inscripcionesCerradas
+        )
+      })
+    : []
+
+  // Consultar sanciones asociadas al perfil
+  const sancionesJugador =
+    perfilActual && Array.isArray(perfilActual.sanciones)
+      ? perfilActual.sanciones
+      : []
+
+  // Guardar los perfiles
   useEffect(() => {
     localStorage.setItem(
       'esports_jugadores',
@@ -158,20 +232,20 @@ function Perfil() {
       modo === 'nuevo'
     )
 
-    // Comprobar que el apodo no esté repetido
-    const apodoExiste = jugadores.some((jugador) =>
-      jugador.apodo.toLowerCase() === apodo.toLowerCase() &&
-      (modo === 'nuevo' || jugador.id !== idSeleccionado)
+    const apodoExiste = jugadores.some(
+      (jugador) =>
+        jugador.apodo.toLowerCase() === apodo.toLowerCase() &&
+        (modo === 'nuevo' || jugador.id !== idSeleccionado)
     )
 
     if (apodoExiste) {
       nuevosErrores.apodo = 'El apodo ya está registrado.'
     }
 
-    // Comprobar que el correo no esté repetido
-    const correoExiste = jugadores.some((jugador) =>
-      jugador.correo.toLowerCase() === correo.toLowerCase() &&
-      (modo === 'nuevo' || jugador.id !== idSeleccionado)
+    const correoExiste = jugadores.some(
+      (jugador) =>
+        jugador.correo.toLowerCase() === correo.toLowerCase() &&
+        (modo === 'nuevo' || jugador.id !== idSeleccionado)
     )
 
     if (correoExiste) {
@@ -186,6 +260,7 @@ function Perfil() {
     }
 
     if (modo === 'nuevo') {
+
       const nuevoId = jugadores.length > 0
         ? Math.max(...jugadores.map((jugador) => jugador.id)) + 1
         : 1
@@ -198,12 +273,16 @@ function Perfil() {
 
       setJugadores([...jugadores, nuevoJugador])
       setIdSeleccionado(nuevoId)
+
       setMensaje('Nuevo perfil registrado correctamente.')
+
     } else {
-      const jugadoresActualizados = jugadores.map((jugador) =>
-        jugador.id === idSeleccionado
-          ? { ...jugador, apodo, correo }
-          : jugador
+
+      const jugadoresActualizados = jugadores.map(
+        (jugador) =>
+          jugador.id === idSeleccionado
+            ? { ...jugador, apodo, correo }
+            : jugador
       )
 
       setJugadores(jugadoresActualizados)
@@ -222,14 +301,23 @@ function Perfil() {
 
   return (
     <div>
-      <h2 className="mb-4">Perfil del jugador</h2>
 
+      <h2 className="mb-4">
+        Perfil del jugador
+      </h2>
+
+      {/* SELECCIÓN DE PERFIL */}
       <div className="card mb-4">
         <div className="card-body">
-          <h3 className="h5 mb-3">Perfiles registrados</h3>
+
+          <h3 className="h5 mb-3">
+            Perfiles registrados
+          </h3>
 
           <div className="row g-3 align-items-end">
+
             <div className="col-12 col-md-8">
+
               <label
                 htmlFor="seleccionarPerfil"
                 className="form-label"
@@ -244,19 +332,28 @@ function Perfil() {
                 onChange={seleccionarJugador}
                 disabled={jugadores.length === 0}
               >
+
                 {jugadores.length === 0 && (
-                  <option value="">No hay perfiles registrados</option>
+                  <option value="">
+                    No hay perfiles registrados
+                  </option>
                 )}
 
                 {jugadores.map((jugador) => (
-                  <option key={jugador.id} value={jugador.id}>
+                  <option
+                    key={jugador.id}
+                    value={jugador.id}
+                  >
                     {jugador.apodo}
                   </option>
                 ))}
+
               </select>
+
             </div>
 
             <div className="col-12 col-md-4">
+
               <button
                 type="button"
                 className="btn btn-success w-100"
@@ -264,20 +361,25 @@ function Perfil() {
               >
                 + Registrar nuevo perfil
               </button>
+
             </div>
+
           </div>
 
           <p className="text-secondary small mt-3 mb-0">
             Perfiles registrados: {jugadores.length}
           </p>
+
         </div>
       </div>
 
       <div className="row g-4">
 
+        {/* FORMULARIO DE PERFIL */}
         <div className="col-12 col-lg-6">
           <div className="card h-100">
             <div className="card-body">
+
               <h3 className="h5 mb-4">
                 {modo === 'nuevo'
                   ? 'Registrar nuevo perfil'
@@ -287,10 +389,15 @@ function Perfil() {
               </h3>
 
               {modo !== 'ver' ? (
+
                 <form onSubmit={guardarPerfil} noValidate>
 
                   <div className="mb-3">
-                    <label htmlFor="apodo" className="form-label">
+
+                    <label
+                      htmlFor="apodo"
+                      className="form-label"
+                    >
                       Apodo
                     </label>
 
@@ -312,10 +419,15 @@ function Perfil() {
                         {errores.apodo}
                       </p>
                     )}
+
                   </div>
 
                   <div className="mb-3">
-                    <label htmlFor="correo" className="form-label">
+
+                    <label
+                      htmlFor="correo"
+                      className="form-label"
+                    >
                       Correo electrónico
                     </label>
 
@@ -333,11 +445,14 @@ function Perfil() {
                         {errores.correo}
                       </p>
                     )}
+
                   </div>
 
                   {modo === 'nuevo' && (
                     <>
+
                       <div className="mb-3">
+
                         <label
                           htmlFor="contrasena"
                           className="form-label"
@@ -363,9 +478,11 @@ function Perfil() {
                             {errores.contrasena}
                           </p>
                         )}
+
                       </div>
 
                       <div className="mb-3">
+
                         <label
                           htmlFor="confirmarContrasena"
                           className="form-label"
@@ -387,11 +504,14 @@ function Perfil() {
                             {errores.confirmarContrasena}
                           </p>
                         )}
+
                       </div>
+
                     </>
                   )}
 
                   <div className="d-flex flex-wrap gap-2">
+
                     <button
                       type="submit"
                       className="btn btn-primary"
@@ -403,6 +523,7 @@ function Perfil() {
 
                     {(modo === 'editar' ||
                       (modo === 'nuevo' && jugadores.length > 0)) && (
+
                       <button
                         type="button"
                         className="btn btn-secondary"
@@ -410,26 +531,38 @@ function Perfil() {
                       >
                         Cancelar
                       </button>
+
                     )}
+
                   </div>
+
                 </form>
+
               ) : (
+
                 <p className="text-secondary">
                   Selecciona un jugador para consultar sus datos
                   o presiona Editar datos para modificarlos.
                 </p>
+
               )}
+
             </div>
           </div>
         </div>
 
+        {/* DATOS DEL JUGADOR */}
         <div className="col-12 col-lg-6">
           <div className="card h-100">
             <div className="card-body">
-              <h3 className="h5 mb-3">Datos del jugador</h3>
+
+              <h3 className="h5 mb-3">
+                Datos del jugador
+              </h3>
 
               {perfilActual ? (
                 <>
+
                   <p>
                     <strong>ID:</strong> {perfilActual.id}
                   </p>
@@ -451,11 +584,15 @@ function Perfil() {
                       Editar datos
                     </button>
                   )}
+
                 </>
+
               ) : (
+
                 <p className="text-secondary">
                   Todavía no se han registrado perfiles.
                 </p>
+
               )}
 
               {mensaje && (
@@ -463,68 +600,134 @@ function Perfil() {
                   {mensaje}
                 </p>
               )}
+
             </div>
           </div>
         </div>
 
+        {/* EQUIPOS DEL JUGADOR */}
         <div className="col-12 col-md-6">
           <div className="card h-100">
             <div className="card-body">
-              <h3 className="h5">Equipos del jugador</h3>
 
-              <ul className="mb-0">
-                {equiposJugador.map((equipo) => (
-                  <li key={equipo.id}>
-                    {equipo.nombre} - {equipo.juego}
-                  </li>
-                ))}
-              </ul>
+              <h3 className="h5 mb-3">
+                Equipos del jugador
+              </h3>
+
+              {equiposJugador.length === 0 ? (
+
+                <p className="text-secondary mb-0">
+                  Este jugador no pertenece a ningún
+                  equipo registrado.
+                </p>
+
+              ) : (
+
+                <ul className="mb-0">
+
+                  {equiposJugador.map((equipo) => (
+                    <li key={equipo.id}>
+                      {equipo.nombre} — {equipo.juego}
+                    </li>
+                  ))}
+
+                </ul>
+
+              )}
+
             </div>
           </div>
         </div>
 
+        {/* HISTORIAL DEL JUGADOR */}
         <div className="col-12 col-md-6">
           <div className="card h-100">
             <div className="card-body">
-              <h3 className="h5">Historial de torneos</h3>
 
-              <ul className="mb-0">
-                {historialTorneos.map((registro) => (
-                  <li key={registro.id}>
-                    {registro.torneo}: {registro.resultado}
-                  </li>
-                ))}
-              </ul>
+              <h3 className="h5 mb-3">
+                Historial de torneos
+              </h3>
+
+              {historialTorneos.length === 0 ? (
+
+                <p className="text-secondary mb-0">
+                  Todavía no hay participaciones visibles
+                  en torneos con inscripciones cerradas.
+                </p>
+
+              ) : (
+
+                <ul className="mb-0">
+
+                  {historialTorneos.map((registro) => (
+                    <li key={registro.id}>
+                      {registro.torneo} — Inscripción registrada
+                    </li>
+                  ))}
+
+                </ul>
+
+              )}
+
             </div>
           </div>
         </div>
 
+        {/* ESTADÍSTICAS */}
         <div className="col-12 col-md-6">
           <div className="card h-100">
             <div className="card-body">
-              <h3 className="h5">Estadísticas</h3>
 
-              <p>Victorias: {estadisticas.victorias}</p>
+              <h3 className="h5 mb-3">
+                Estadísticas
+              </h3>
 
-              <p className="mb-0">
-                Derrotas: {estadisticas.derrotas}
+              <p className="text-secondary mb-0">
+                Todavía no existen resultados de partidas
+                registrados para este jugador.
               </p>
+
             </div>
           </div>
         </div>
 
+        {/* SANCIONES */}
         <div className="col-12 col-md-6">
           <div className="card h-100">
             <div className="card-body">
-              <h3 className="h5">Sanciones</h3>
 
-              <ul className="mb-0">
-                {sanciones.map((sancion) => (
-                  <li key={sancion.id}>
-                    {sancion.estado}: {sancion.descripcion}
-                  </li>
-                ))}
-              </ul>
+              <h3 className="h5 mb-3">
+                Sanciones
+              </h3>
+
+              {sancionesJugador.length > 0 ? (
+
+                <ul className="mb-0">
+
+                  {sancionesJugador.map((sancion, indice) => (
+                    <li key={indice}>
+                      {sancion.estado} —{' '}
+                      {sancion.descripcion || 'Sin descripción'}
+                    </li>
+                  ))}
+
+                </ul>
+
+              ) : perfilActual?.sancionActiva === true ? (
+
+                <p className="text-danger mb-0">
+                  Este jugador tiene una sanción activa.
+                </p>
+
+              ) : (
+
+                <p className="text-secondary mb-0">
+                  No hay sanciones registradas
+                  para este jugador.
+                </p>
+
+              )}
+
             </div>
           </div>
         </div>
@@ -532,11 +735,12 @@ function Perfil() {
       </div>
 
       <p className="text-white-50 small mt-4">
-        Los equipos, historial, estadísticas y sanciones
-        todavía son datos de demostración de la EP1.
-        Los vincularemos a cada jugador cuando integremos
-        los módulos del equipo.
+        La información de equipos e inscripciones se obtiene
+        de los registros guardados en este navegador.
+        Las estadísticas deportivas se mostrarán
+        cuando existan resultados registrados.
       </p>
+
     </div>
   )
 }

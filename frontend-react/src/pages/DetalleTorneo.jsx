@@ -1,9 +1,41 @@
 
 import { obtenerInscritosActuales } from '../logica/contarInscripciones'
+import { obtenerParticipantes } from '../data/participantes'
 
 import TablaRanking from '../components/TablaRanking'
 import LlaveTorneo from '../components/LlaveTorneo'
 import ListaPartidas from '../components/ListaPartidas'
+import ListaParticipantes from '../components/ListaParticipantes'
+
+// Obtener inscripciones nuevas guardadas en el navegador
+function cargarParticipantesLocales(torneoId) {
+  try {
+    const datos = localStorage.getItem(
+      'esports_inscripciones_ep2'
+    )
+
+    if (datos) {
+      const inscripciones = JSON.parse(datos)
+
+      if (Array.isArray(inscripciones)) {
+        return inscripciones
+          .filter(
+            (inscripcion) =>
+              Number(inscripcion.torneoId) === Number(torneoId)
+          )
+          .map((inscripcion) => ({
+            id: `local-${inscripcion.id}`,
+            nombre: inscripcion.participante,
+            tipo: inscripcion.tipo
+          }))
+      }
+    }
+  } catch {
+    return []
+  }
+
+  return []
+}
 
 function DetalleTorneo({
   torneo,
@@ -12,7 +44,7 @@ function DetalleTorneo({
   partidas = []
 }) {
 
-  // Si no existe un torneo seleccionado
+  // Comprobar que exista un torneo
   if (!torneo) {
     return (
       <div className="card">
@@ -47,12 +79,27 @@ function DetalleTorneo({
     torneo.cupos - totalInscritos
   )
 
-  // Estados en los que ya puede existir una clasificación
+  // Obtener participantes de nuestra base de datos simulada
+  const participantesIniciales = obtenerParticipantes(
+    Number(torneo.id)
+  )
+
+  // Obtener participantes registrados desde el formulario
+  const participantesLocales = cargarParticipantesLocales(
+    torneo.id
+  )
+
+  // Reunir ambos listados sin modificar los cupos
+  const participantesInscritos = [
+    ...participantesIniciales,
+    ...participantesLocales
+  ]
+
+  // El ranking solamente se muestra si el torneo comenzó
   const torneoIniciado =
     torneo.estado === 'En curso' ||
     torneo.estado === 'Finalizado'
 
-  // No mostrar resultados antes de comenzar el torneo
   const rankingVisible = torneoIniciado
     ? participantes
     : []
@@ -70,12 +117,11 @@ function DetalleTorneo({
 
       {/* INFORMACIÓN GENERAL */}
       <div className="card mb-4">
-
         <div className="card-body">
 
           <div className="row g-4 align-items-center">
 
-            {/* IMAGEN DEL VIDEOJUEGO */}
+            {/* IMAGEN DEL TORNEO */}
             <div className="col-12 col-md-5">
 
               <img
@@ -160,10 +206,9 @@ function DetalleTorneo({
           </p>
 
         </div>
-
       </div>
 
-      {/* MENSAJE SEGÚN ESTADO DEL TORNEO */}
+      {/* MENSAJES SEGÚN ESTADO */}
       {torneo.estado === 'Abierto' && (
         <div className="alert alert-info mb-4">
 
@@ -173,9 +218,10 @@ function DetalleTorneo({
 
           <p className="mb-0">
             La competencia todavía no ha comenzado.
-            La tabla de posiciones y los enfrentamientos
-            estarán disponibles cuando se registren
-            los resultados y se programen las partidas.
+            Los participantes podrán consultarse cuando
+            se cierren las inscripciones.
+            La clasificación estará disponible cuando
+            se registren resultados.
           </p>
 
         </div>
@@ -190,8 +236,9 @@ function DetalleTorneo({
 
           <p className="mb-0">
             Este torneo no recibe nuevas inscripciones.
-            La clasificación estará disponible cuando
-            comience la competencia y existan resultados.
+            Ya puedes consultar los participantes registrados.
+            Los resultados estarán disponibles cuando
+            comience la competencia.
           </p>
 
         </div>
@@ -206,8 +253,8 @@ function DetalleTorneo({
 
           <p className="mb-0">
             La competencia está en desarrollo.
-            Los resultados se mostrarán cuando
-            estén disponibles.
+            Puedes consultar los participantes
+            y los resultados disponibles.
           </p>
 
         </div>
@@ -222,12 +269,20 @@ function DetalleTorneo({
 
           <p className="mb-0">
             La competencia ha terminado.
-            La clasificación final se mostrará
-            cuando sus resultados estén registrados.
+            Los participantes y la clasificación final
+            estarán disponibles si existen
+            resultados registrados.
           </p>
 
         </div>
       )}
+
+      {/* PARTICIPANTES INSCRITOS */}
+      <ListaParticipantes
+        estado={torneo.estado}
+        participantes={participantesInscritos}
+        totalInscritos={totalInscritos}
+      />
 
       {/* TABLA DE POSICIONES */}
       <div className="mb-4">
@@ -238,23 +293,23 @@ function DetalleTorneo({
 
       </div>
 
-     {/* LLAVES Y ENFRENTAMIENTOS */}
-<div className="mb-4">
+      {/* LLAVES DEL TORNEO */}
+      <div className="mb-4">
 
-  <LlaveTorneo
-    partidas={partidasVisibles}
-  />
+        <LlaveTorneo
+          partidas={partidasVisibles}
+        />
 
-</div>
+      </div>
 
-{/* CALENDARIO DE PARTIDAS */}
-<div className="mb-4">
+      {/* CALENDARIO DE PARTIDAS */}
+      <div className="mb-4">
 
-  <ListaPartidas
-    partidas={partidasVisibles}
-  />
+        <ListaPartidas
+          partidas={partidasVisibles}
+        />
 
-</div>
+      </div>
 
       {/* VOLVER AL LISTADO */}
       <div className="text-center">
