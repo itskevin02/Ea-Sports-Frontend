@@ -1,16 +1,74 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+# eSports Arena Manager - Frontend React
 
-Currently, two official plugins are available:
+Aplicación frontend desarrollada con React, Vite y Bootstrap para la Evaluación Parcial 2 del proyecto eSports Arena Manager.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tecnologías
 
-## React Compiler
+- React 19
+- JavaScript
+- Vite 8
+- Bootstrap 5
+- Jasmine
+- Karma
+- React Testing Library
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Funcionalidades
 
-## Expanding the Oxlint configuration
+La aplicación permite:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- Consultar y filtrar torneos.
+- Visualizar detalles, participantes, calendario y premios.
+- Registrar y administrar jugadores.
+- Crear y gestionar equipos.
+- Inscribir jugadores y equipos.
+- Cancelar inscripciones.
+- Aplicar y levantar sanciones.
+- Validar sanciones de integrantes antes de inscribir equipos.
+- Guardar datos mediante localStorage.
+
+## Instalación
+
+Desde la carpeta `frontend-react`:
+
+```powershell
+npm install
+```
+
+## Ejecutar la aplicación
+
+```powershell
+npm run dev
+```
+
+## Ejecutar pruebas Jasmine
+
+```powershell
+npm test
+```
+
+Último resultado verificado:
+
+```text
+TOTAL: 29 SUCCESS
+```
+
+## Compilar para producción
+
+```powershell
+npm run build
+```
+
+Los archivos compilados se generan en `dist`.
+
+## Publicación
+
+https://itskevin02.github.io/Ea-Sports-Frontend/
+
+La publicación automática se realiza desde la rama `develop`.
+
+## Información adicional
+
+La aplicación utiliza localStorage y datos de demostración. No cuenta con un backend ni una base de datos centralizada en esta evaluación.
+
+Para conocer el proyecto completo, revisar el [README principal](../README.md).
