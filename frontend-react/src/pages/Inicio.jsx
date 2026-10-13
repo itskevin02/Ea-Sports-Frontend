@@ -2,6 +2,7 @@
 import { torneosData } from '../data/torneos'
 import { obtenerInscritosActuales } from '../logica/contarInscripciones'
 import './Inicio.css'
+import InicioComplementos from '../components/InicioComplementos'
 
 function cargarRegistros(clave) {
   try {
@@ -261,7 +262,11 @@ export function Inicio({ onNavegar, onVerDetalle }) {
         )}
 
       </section>
-
+      {/* PRÓXIMOS CIERRES Y VIDEO */}
+        <InicioComplementos
+          torneos={torneosData}
+          onVerDetalle={onVerDetalle}
+        />
       {/* ACCESOS RÁPIDOS */}
       <section className="mb-4">
 

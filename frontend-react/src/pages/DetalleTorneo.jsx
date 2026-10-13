@@ -18,7 +18,7 @@ function obtenerFechaActual() {
   return `${anio}-${mes}-${dia}`
 }
 
-// Obtener inscripciones guardadas en el navegador
+// Cargar participantes inscritos desde el navegador
 function cargarParticipantesLocales(torneoId) {
   try {
     const datos = localStorage.getItem(
@@ -48,6 +48,25 @@ function cargarParticipantesLocales(torneoId) {
   return []
 }
 
+// Premios simulados para la EP2
+const premiosSimulados = [
+  {
+    posicion: '1.er lugar',
+    premio: 'Trofeo digital de oro',
+    descripcion: 'Reconocimiento al campeón del torneo.'
+  },
+  {
+    posicion: '2.º lugar',
+    premio: 'Medalla digital de plata',
+    descripcion: 'Reconocimiento al subcampeón.'
+  },
+  {
+    posicion: '3.er lugar',
+    premio: 'Medalla digital de bronce',
+    descripcion: 'Reconocimiento al tercer lugar.'
+  }
+]
+
 function DetalleTorneo({
   torneo,
   onVolver,
@@ -55,7 +74,7 @@ function DetalleTorneo({
   partidas = []
 }) {
 
-  // Validar que exista un torneo
+  // Validar que exista el torneo
   if (!torneo) {
     return (
       <div className="card">
@@ -82,7 +101,7 @@ function DetalleTorneo({
     )
   }
 
-  // Calcular inscritos y cupos
+  // Calcular participantes y cupos
   const totalInscritos = obtenerInscritosActuales(torneo)
 
   const disponibles = Math.max(
@@ -90,20 +109,20 @@ function DetalleTorneo({
     torneo.cupos - totalInscritos
   )
 
-  // Comprobar el plazo de inscripción
+  // Validar fecha de cierre
   const plazoFinalizado =
     torneo.fechaCierre &&
     obtenerFechaActual() > torneo.fechaCierre
 
   const sinCupos = disponibles === 0
 
-  // Determinar si realmente recibe inscripciones
+  // Comprobar si todavía se puede inscribir
   const inscripcionesHabilitadas =
     torneo.estado === 'Abierto' &&
     !plazoFinalizado &&
     !sinCupos
 
-  // Mostrar disponibilidad real
+  // Estado de disponibilidad
   let disponibilidad = 'Disponible'
   let colorDisponibilidad = 'text-success'
 
@@ -123,12 +142,12 @@ function DetalleTorneo({
     colorDisponibilidad = 'text-danger'
   }
 
-  // Participantes iniciales
+  // Participantes iniciales del torneo
   const participantesIniciales = obtenerParticipantes(
     Number(torneo.id)
   )
 
-  // Participantes agregados desde el formulario
+  // Participantes registrados por el usuario
   const participantesLocales = cargarParticipantesLocales(
     torneo.id
   )
@@ -138,7 +157,7 @@ function DetalleTorneo({
     ...participantesLocales
   ]
 
-  // Mostrar resultados únicamente en torneos iniciados
+  // Ranking y partidas solo cuando comenzó el torneo
   const torneoIniciado =
     torneo.estado === 'En curso' ||
     torneo.estado === 'Finalizado'
@@ -180,7 +199,7 @@ function DetalleTorneo({
 
             </div>
 
-            {/* DATOS */}
+            {/* DATOS DEL TORNEO */}
             <div className="col-12 col-md-7">
 
               <h3 className="h4 mb-3">
@@ -223,7 +242,6 @@ function DetalleTorneo({
                 </span>
               </p>
 
-              {/* NUEVO: DISPONIBILIDAD */}
               <p>
                 <strong>Inscripciones:</strong>{' '}
 
@@ -259,8 +277,9 @@ function DetalleTorneo({
         </div>
       </div>
 
-      {/* TORNEO ABIERTO Y CON CUPOS */}
+      {/* TORNEO ABIERTO */}
       {inscripcionesHabilitadas && (
+
         <div className="alert alert-info mb-4">
 
           <h3 className="h6">
@@ -277,57 +296,60 @@ function DetalleTorneo({
           </p>
 
         </div>
+
       )}
 
-      {/* NUEVO: PLAZO FINALIZADO */}
+      {/* PLAZO FINALIZADO */}
       {torneo.estado === 'Abierto' &&
         plazoFinalizado && (
 
-        <div className="alert alert-warning mb-4">
+          <div className="alert alert-warning mb-4">
 
-          <h3 className="h6">
-            Plazo de inscripción finalizado
-          </h3>
+            <h3 className="h6">
+              Plazo de inscripción finalizado
+            </h3>
 
-          <p className="mb-0">
-            La fecha límite para inscribirse ya pasó.
+            <p className="mb-0">
+              La fecha límite para inscribirse ya pasó.
 
-            Aunque el torneo todavía aparece registrado
-            como Abierto, no se aceptan nuevas
-            inscripciones.
+              Aunque el torneo todavía aparece
+              registrado como Abierto, no se aceptan
+              nuevas inscripciones.
 
-            Los participantes se podrán consultar
-            cuando el organizador cambie su estado
-            a Cerrado.
-          </p>
+              Los participantes se podrán consultar
+              cuando el organizador cambie su estado
+              a Cerrado.
+            </p>
 
-        </div>
-      )}
+          </div>
 
-      {/* NUEVO: TORNEO SIN CUPOS */}
+        )}
+
+      {/* TORNEO SIN CUPOS */}
       {torneo.estado === 'Abierto' &&
         !plazoFinalizado &&
         sinCupos && (
 
-        <div className="alert alert-warning mb-4">
+          <div className="alert alert-warning mb-4">
 
-          <h3 className="h6">
-            Torneo sin cupos disponibles
-          </h3>
+            <h3 className="h6">
+              Torneo sin cupos disponibles
+            </h3>
 
-          <p className="mb-0">
-            Se alcanzó la cantidad máxima de
-            participantes permitidos.
+            <p className="mb-0">
+              Se alcanzó la cantidad máxima de
+              participantes permitidos.
 
-            No es posible realizar nuevas
-            inscripciones.
+              No es posible realizar nuevas
+              inscripciones.
 
-            El listado se mostrará cuando
-            el torneo cambie al estado Cerrado.
-          </p>
+              El listado se mostrará cuando
+              el torneo cambie al estado Cerrado.
+            </p>
 
-        </div>
-      )}
+          </div>
+
+        )}
 
       {/* TORNEO CERRADO */}
       {torneo.estado === 'Cerrado' && (
@@ -349,6 +371,7 @@ function DetalleTorneo({
           </p>
 
         </div>
+
       )}
 
       {/* TORNEO EN CURSO */}
@@ -364,10 +387,11 @@ function DetalleTorneo({
             La competencia está en desarrollo.
 
             Puedes consultar los participantes
-            y los resultados que estén disponibles.
+            y los resultados disponibles.
           </p>
 
         </div>
+
       )}
 
       {/* TORNEO FINALIZADO */}
@@ -388,9 +412,10 @@ function DetalleTorneo({
           </p>
 
         </div>
+
       )}
 
-      {/* LISTADO DE PARTICIPANTES */}
+      {/* PARTICIPANTES INSCRITOS */}
       <ListaParticipantes
         estado={torneo.estado}
         participantes={participantesInscritos}
@@ -415,7 +440,7 @@ function DetalleTorneo({
 
       </div>
 
-      {/* CALENDARIO */}
+      {/* CALENDARIO DE PARTIDAS */}
       <div className="mb-4">
 
         <ListaPartidas
@@ -424,7 +449,74 @@ function DetalleTorneo({
 
       </div>
 
-      {/* VOLVER */}
+      {/* PREMIOS SIMULADOS */}
+      <div className="card mb-4">
+
+        <div className="card-body">
+
+          <h3 className="h5 mb-3">
+            Premios del Torneo
+          </h3>
+
+          <p className="text-secondary mb-4">
+            Reconocimientos simbólicos para los
+            primeros tres lugares de la competencia.
+          </p>
+
+          <div className="row g-3">
+
+            {premiosSimulados.map((premio) => (
+
+              <div
+                className="col-12 col-md-4"
+                key={premio.posicion}
+              >
+
+                <div className="border rounded p-3 h-100">
+
+                  <h4 className="h6 fw-bold">
+                    {premio.posicion}
+                  </h4>
+
+                  <p className="fw-semibold mb-2">
+                    {premio.premio}
+                  </p>
+
+                  <p className="text-secondary small mb-0">
+                    {premio.descripcion}
+                  </p>
+
+                </div>
+
+              </div>
+
+            ))}
+
+          </div>
+
+          {/* VALIDAR ASIGNACIÓN DE PREMIOS */}
+          {torneo.estado !== 'Finalizado' ? (
+
+            <div className="alert alert-info mt-4 mb-0">
+              Los premios todavía no han sido asignados.
+              Se entregarán cuando finalice el torneo
+              y existan resultados validados.
+            </div>
+
+          ) : (
+
+            <div className="alert alert-secondary mt-4 mb-0">
+              El torneo terminó, pero la asignación
+              de premios depende de los resultados
+              validados y de la clasificación final.
+            </div>
+
+          )}
+
+        </div>
+      </div>
+
+      {/* VOLVER A TORNEOS */}
       <div className="text-center">
 
         <button
