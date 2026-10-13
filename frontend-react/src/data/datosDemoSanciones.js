@@ -68,7 +68,7 @@ const equiposDemo = [
   }
 ]
 
-// Recuperar registros sin perder los existentes
+// Recuperar registros existentes
 function cargarDatos(clave) {
   try {
     const datos = localStorage.getItem(clave)
@@ -83,13 +83,13 @@ function cargarDatos(clave) {
       return registros
     }
   } catch {
-    // No modificar los datos si existe un error
+    // No reemplazar datos inválidos
   }
 
   return null
 }
 
-// Agregar ejemplos solamente si no existen
+// Agregar ejemplos sin repetir registros
 function agregarEjemplos(clave, ejemplos, campoNombre) {
   const registros = cargarDatos(clave)
 
@@ -115,18 +115,33 @@ function agregarEjemplos(clave, ejemplos, campoNombre) {
   }
 }
 
+// Inicializar los datos de demostración
 function inicializarDatosDemoSanciones() {
+
   agregarEjemplos(
     'esports_jugadores',
     jugadoresDemo,
     'apodo'
   )
 
-  agregarEjemplos(
-    'esports_equipos',
-    equiposDemo,
-    'nombre'
-  )
+  // El equipo de demostración se crea una sola vez
+  const claveDemo = 'esports_equipos_demo_inicializados'
+
+  if (localStorage.getItem(claveDemo) !== 'si') {
+
+    const equipos = cargarDatos('esports_equipos')
+
+    if (equipos !== null) {
+
+      agregarEjemplos(
+        'esports_equipos',
+        equiposDemo,
+        'nombre'
+      )
+
+      localStorage.setItem(claveDemo, 'si')
+    }
+  }
 }
 
 export { inicializarDatosDemoSanciones }
