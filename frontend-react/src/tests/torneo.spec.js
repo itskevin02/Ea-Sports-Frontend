@@ -11,12 +11,10 @@ import {
 import { TarjetaTorneo } from '../components/TarjetaTorneo'
 import { Torneos } from '../pages/Torneos'
 
-// Limpiar después de cada prueba
 afterEach(() => {
   cleanup()
 })
 
-// Datos de ejemplo para las pruebas
 const torneoMock = {
   id: 1,
   nombre: 'Copa EA Sports FC 24',
@@ -31,34 +29,28 @@ const torneoMock = {
 
 describe('Pruebas unitarias de Torneos', () => {
 
-  // PRUEBA 1: Mostrar información del torneo
   it('01. Muestra correctamente los datos del torneo', () => {
 
     render(<TarjetaTorneo torneo={torneoMock} />)
 
-    // Verificar nombre del torneo
     expect(
       screen.getByText('Copa EA Sports FC 24')
     ).not.toBeNull()
 
-    // Verificar videojuego
     expect(
       screen.getByText('Juego: EA Sports FC')
     ).not.toBeNull()
 
-    // Verificar estado
     expect(
       screen.getByText('Abierto')
     ).not.toBeNull()
 
-    // Verificar cupos
     expect(
       screen.getByText('Cupos: 20/32')
     ).not.toBeNull()
 
   })
 
-  // PRUEBA 2: Filtrar torneos
   it('02. Filtra los torneos segun la busqueda y el estado', () => {
 
     render(<Torneos />)
@@ -67,7 +59,6 @@ describe('Pruebas unitarias de Torneos', () => {
       'Buscar por nombre o juego...'
     )
 
-    // Buscar un torneo de Madden
     fireEvent.change(buscador, {
       target: { value: 'Madden' }
     })
@@ -76,19 +67,18 @@ describe('Pruebas unitarias de Torneos', () => {
       screen.getByText('Liga Madden NFL Master')
     ).not.toBeNull()
 
-    // Comprobar que FC26 no aparece en los resultados
     expect(
       screen.queryByText('Copa EA Sports FC 26')
     ).toBeNull()
 
-    // Filtrar por estado
-    const selectorEstado = screen.getByRole('combobox')
+    const selectorEstado = screen.getByLabelText(
+      'Filtrar por estado'
+    )
 
     fireEvent.change(selectorEstado, {
       target: { value: 'Abierto' }
     })
 
-    // Madden no está abierto
     expect(
       screen.getByText(
         'No se encontraron torneos con esos criterios.'
@@ -97,7 +87,6 @@ describe('Pruebas unitarias de Torneos', () => {
 
   })
 
-  // PRUEBA 3: Botón Ver Detalle
   it('03. Ejecuta la funcion al presionar Ver Detalle', () => {
 
     const funcionDetalle = jasmine.createSpy('funcionDetalle')
@@ -113,11 +102,81 @@ describe('Pruebas unitarias de Torneos', () => {
       name: 'Ver Detalle'
     })
 
-    // Simular clic en el botón
     fireEvent.click(boton)
 
-    // Verificar que se ejecutó la función
     expect(funcionDetalle).toHaveBeenCalledWith(torneoMock)
+
+  })
+
+  it('04. Filtra los torneos por juego', () => {
+
+    render(<Torneos />)
+
+    const selectorJuego = screen.getByLabelText(
+      'Filtrar por juego'
+    )
+
+    fireEvent.change(selectorJuego, {
+      target: { value: 'Fortnite' }
+    })
+
+    expect(
+      screen.getByText('Copa Fortnite Dúos')
+    ).not.toBeNull()
+
+    expect(
+      screen.queryByText('Liga VALORANT')
+    ).toBeNull()
+
+  })
+
+  it('05. Filtra torneos por rango de fechas', () => {
+
+    render(<Torneos />)
+
+    fireEvent.change(
+      screen.getByLabelText('Fecha de inicio desde'),
+      { target: { value: '2026-11-15' } }
+    )
+
+    fireEvent.change(
+      screen.getByLabelText('Fecha de inicio hasta'),
+      { target: { value: '2026-11-20' } }
+    )
+
+    expect(
+      screen.getByText('Copa EA Sports FC 26')
+    ).not.toBeNull()
+
+    expect(
+      screen.getByText('Championship Apex Legends')
+    ).not.toBeNull()
+
+    expect(
+      screen.queryByText('Liga Madden NFL Master')
+    ).toBeNull()
+
+  })
+
+  it('06. Rechaza un rango de fechas incorrecto', () => {
+
+    render(<Torneos />)
+
+    fireEvent.change(
+      screen.getByLabelText('Fecha de inicio desde'),
+      { target: { value: '2026-12-31' } }
+    )
+
+    fireEvent.change(
+      screen.getByLabelText('Fecha de inicio hasta'),
+      { target: { value: '2026-11-01' } }
+    )
+
+    expect(
+      screen.getByText(
+        /La fecha inicial no puede ser posterior/
+      )
+    ).not.toBeNull()
 
   })
 

@@ -9,7 +9,14 @@ import {
   equipoCompleto
 } from '../logica/validarInscripcion'
 
-import { tieneSancionActiva } from '../logica/sanciones'
+import {
+  tieneSancionActiva,
+  obtenerIntegranteSancionado
+} from '../logica/sanciones'
+
+import {
+  eliminarInscripcionDeLista
+} from '../logica/eliminarInscripcion'
 
 import FormularioInscripcion from '../components/FormularioInscripcion'
 
@@ -76,21 +83,26 @@ function obtenerFechaActual() {
 
 function Inscripcion() {
 
+  // Jugadores disponibles
   const [jugadores] = useState(cargarJugadores)
 
-  // Consultar los equipos registrados en el navegador
+  // Equipos guardados en el navegador
   const equipos = cargarDatos('esports_equipos')
 
+  // Inscripciones registradas
   const [inscripciones, setInscripciones] = useState(
     () => cargarDatos(claveInscripciones)
   )
 
+  // Datos seleccionados en el formulario
   const [torneoId, setTorneoId] = useState('')
   const [tipo, setTipo] = useState('')
   const [participanteId, setParticipanteId] = useState('')
 
+  // Mensajes
   const [error, setError] = useState('')
   const [confirmacion, setConfirmacion] = useState(null)
+  const [mensajeCancelacion, setMensajeCancelacion] = useState('')
 
   // Obtener torneo seleccionado
   const torneoSeleccionado = torneosData.find(
@@ -128,6 +140,16 @@ function Inscripcion() {
         ? jugadorSeleccionado
         : null
 
+  // Revisar sanciones de los integrantes del equipo
+  const integranteSancionado =
+    tipo === 'equipo'
+      ? obtenerIntegranteSancionado(
+          participanteSeleccionado,
+          jugadores,
+          obtenerFechaActual()
+        )
+      : null
+
   // Contar las inscripciones realizadas desde el navegador
   const inscritosLocales = inscripciones.filter(
     (registro) =>
@@ -153,7 +175,7 @@ function Inscripcion() {
       String(registro.participanteId) === participanteId
   )
 
-  // Revisar los requisitos antes de habilitar el botón
+  // Revisar requisitos antes de habilitar inscripción
   let mensajeBloqueo = ''
 
   if (!torneoSeleccionado) {
@@ -223,6 +245,15 @@ function Inscripcion() {
 
   } else if (
     tipo === 'equipo' &&
+    integranteSancionado
+  ) {
+
+    mensajeBloqueo =
+      `El jugador ${integranteSancionado.apodo} tiene ` +
+      'una sanción vigente. Este equipo no puede inscribirse.'
+
+  } else if (
+    tipo === 'equipo' &&
     !equipoCompleto(
       participanteSeleccionado,
       torneoSeleccionado.integrantesMinimos
@@ -240,7 +271,7 @@ function Inscripcion() {
 
   const puedeConfirmar = mensajeBloqueo === ''
 
-  // Guardar inscripciones en el navegador
+  // Guardar inscripciones en localStorage
   useEffect(() => {
     localStorage.setItem(
       claveInscripciones,
@@ -248,7 +279,7 @@ function Inscripcion() {
     )
   }, [inscripciones])
 
-  // Cambiar torneo
+  // Cambiar torneo seleccionado
   function cambiarTorneo(evento) {
     setTorneoId(evento.target.value)
     setTipo('')
@@ -279,7 +310,7 @@ function Inscripcion() {
     setError('')
     setConfirmacion(null)
 
-    // Validar todos los requisitos
+    // Validar requisitos
     if (!puedeConfirmar) {
       setError(mensajeBloqueo)
       return
@@ -288,6 +319,26 @@ function Inscripcion() {
     if (!torneoSeleccionado || !participanteSeleccionado) {
       setError('Debes seleccionar un participante válido.')
       return
+    }
+
+    // Comprobar nuevamente las sanciones del equipo
+    if (tipo === 'equipo') {
+
+      const jugadoresActuales = cargarDatos('esports_jugadores')
+
+      const sancionadoActual = obtenerIntegranteSancionado(
+        participanteSeleccionado,
+        jugadoresActuales,
+        obtenerFechaActual()
+      )
+
+      if (sancionadoActual) {
+        setError(
+          `El jugador ${sancionadoActual.apodo} tiene ` +
+          'una sanción vigente. El equipo no puede inscribirse.'
+        )
+        return
+      }
     }
 
     // Comprobar el videojuego del equipo
@@ -309,7 +360,7 @@ function Inscripcion() {
         ? participanteSeleccionado.nombre
         : participanteSeleccionado.apodo
 
-    // Evitar una inscripción duplicada
+    // Evitar inscripción duplicada
     const yaInscrito = inscripciones.some(
       (registro) =>
         Number(registro.torneoId) === torneoSeleccionado.id &&
@@ -331,6 +382,7 @@ function Inscripcion() {
         ) + 1
       : 1
 
+    // Nueva inscripción
     const nuevaInscripcion = {
       id: nuevoId,
       torneoId: torneoSeleccionado.id,
@@ -341,7 +393,7 @@ function Inscripcion() {
       fecha: obtenerFechaActual()
     }
 
-    // Registrar la inscripción
+    // Registrar inscripción
     setInscripciones([
       ...inscripciones,
       nuevaInscripcion
@@ -349,8 +401,38 @@ function Inscripcion() {
 
     setConfirmacion(nuevaInscripcion)
 
-    // Limpiar participante seleccionado
+    // Limpiar selección
     setParticipanteId('')
+    setMensajeCancelacion('')
+  }
+
+  // Eliminar una inscripción sin borrar al jugador o equipo
+  function eliminarInscripcion(registro) {
+
+    const confirmar = window.confirm(
+      `¿Deseas cancelar la inscripción de ${registro.participante} ` +
+      `en el torneo ${registro.torneo}?`
+    )
+
+    if (!confirmar) {
+      return
+    }
+
+    // Eliminar solo el registro seleccionado
+    const inscripcionesActualizadas = eliminarInscripcionDeLista(
+      inscripciones,
+      registro.id
+    )
+
+    setInscripciones(inscripcionesActualizadas)
+
+    // Limpiar mensajes anteriores
+    setConfirmacion(null)
+    setError('')
+
+    setMensajeCancelacion(
+      `Inscripción de ${registro.participante} cancelada correctamente.`
+    )
   }
 
   return (
@@ -506,6 +588,7 @@ function Inscripcion() {
                   </div>
 
                 </div>
+
               )}
 
               {/* SELECCIONAR PARTICIPANTE */}
@@ -580,6 +663,7 @@ function Inscripcion() {
                               Tienes {equipos.length} equipo(s)
                               registrados, pero ninguno corresponde
                               al videojuego{' '}
+
                               <strong>
                                 {torneoSeleccionado?.juego}
                               </strong>.
@@ -616,7 +700,7 @@ function Inscripcion() {
         </div>
       </div>
 
-      {/* CONFIRMACIÓN */}
+      {/* CONFIRMACIÓN DE INSCRIPCIÓN */}
       {confirmacion && (
 
         <div className="alert alert-success">
@@ -661,6 +745,18 @@ function Inscripcion() {
             Total de inscripciones: {inscripciones.length}
           </p>
 
+          {/* MENSAJE DE CANCELACIÓN */}
+          {mensajeCancelacion && (
+
+            <div
+              className="alert alert-success"
+              role="status"
+            >
+              {mensajeCancelacion}
+            </div>
+
+          )}
+
           {inscripciones.length === 0 ? (
 
             <p className="text-secondary">
@@ -680,6 +776,7 @@ function Inscripcion() {
                     <th>Tipo</th>
                     <th>Participante</th>
                     <th>Fecha</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
 
@@ -694,6 +791,19 @@ function Inscripcion() {
                       <td>{registro.tipo}</td>
                       <td>{registro.participante}</td>
                       <td>{registro.fecha}</td>
+
+                      {/* BOTÓN ELIMINAR INSCRIPCIÓN */}
+                      <td>
+
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          onClick={() => eliminarInscripcion(registro)}
+                        >
+                          Eliminar inscripción
+                        </button>
+
+                      </td>
 
                     </tr>
 
