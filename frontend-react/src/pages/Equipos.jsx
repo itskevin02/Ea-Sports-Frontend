@@ -1,7 +1,11 @@
 ﻿
 import { useState, useEffect } from 'react'
 
-// Juegos disponibles para crear equipos
+import {
+  eliminarEquipoYInscripciones
+} from '../logica/eliminarEquipo'
+
+// Juegos disponibles
 const juegos = [
   'Counter-Strike 2',
   'VALORANT',
@@ -11,7 +15,7 @@ const juegos = [
   'Apex Legends'
 ]
 
-// Jugadores de ejemplo mientras se integran los perfiles
+// Jugadores de ejemplo
 const jugadoresEjemplo = [
   { id: 9001, apodo: 'Jugador01' },
   { id: 9002, apodo: 'Jugador02' },
@@ -21,7 +25,7 @@ const jugadoresEjemplo = [
   { id: 9006, apodo: 'Jugador06' }
 ]
 
-// Obtener jugadores registrados
+// Recuperar jugadores
 function cargarJugadores() {
   try {
     const datos = localStorage.getItem('esports_jugadores')
@@ -37,7 +41,7 @@ function cargarJugadores() {
       }
     }
   } catch {
-    // Si no hay datos válidos se utilizan ejemplos
+    // Utilizar jugadores de ejemplo
   }
 
   return {
@@ -46,7 +50,7 @@ function cargarJugadores() {
   }
 }
 
-// Obtener equipos guardados
+// Recuperar equipos
 function cargarEquipos() {
   try {
     const datos = localStorage.getItem('esports_equipos')
@@ -66,6 +70,7 @@ function cargarEquipos() {
 }
 
 function Equipos() {
+
   const [datosJugadores] = useState(cargarJugadores)
   const jugadores = datosJugadores.lista
 
@@ -85,12 +90,13 @@ function Equipos() {
 
   const [idJugadorAgregar, setIdJugadorAgregar] = useState('')
 
-  // Equipo que se está administrando
+  // Equipo que estamos administrando
   const equipoActual = equipos.find(
-    (equipo) => equipo.id === idEquipoSeleccionado
+    (equipo) =>
+      String(equipo.id) === String(idEquipoSeleccionado)
   )
 
-  // Guardar equipos automáticamente
+  // Guardar equipos al modificarlos
   useEffect(() => {
     localStorage.setItem(
       'esports_equipos',
@@ -98,7 +104,7 @@ function Equipos() {
     )
   }, [equipos])
 
-  // Actualizar campos del formulario
+  // Actualizar formulario
   function cambiarCampo(evento) {
     const { name, value } = evento.target
 
@@ -115,13 +121,14 @@ function Equipos() {
     setMensaje('')
   }
 
-  // Crear un nuevo equipo
+  // Crear un equipo
   function crearEquipo(evento) {
     evento.preventDefault()
 
     const nombre = formulario.nombre.trim()
     const nuevosErrores = {}
 
+    // Validar nombre
     if (nombre === '') {
       nuevosErrores.nombre =
         'El nombre del equipo es obligatorio.'
@@ -137,11 +144,13 @@ function Equipos() {
       }
     }
 
+    // Validar juego
     if (formulario.juego === '') {
       nuevosErrores.juego =
         'Debes seleccionar un juego.'
     }
 
+    // Validar capitán
     if (formulario.capitanId === '') {
       nuevosErrores.capitanId =
         'Debes seleccionar un capitán.'
@@ -164,8 +173,9 @@ function Equipos() {
       return
     }
 
+    // Crear ID que no esté en uso
     const nuevoId = equipos.length > 0
-      ? Math.max(...equipos.map((equipo) => equipo.id)) + 1
+      ? Math.max(...equipos.map((equipo) => Number(equipo.id))) + 1
       : 1
 
     const nuevoEquipo = {
@@ -200,7 +210,7 @@ function Equipos() {
     setMensaje('Equipo creado correctamente.')
   }
 
-  // Agregar un jugador al equipo seleccionado
+  // Agregar un jugador al equipo
   function agregarJugador() {
     if (!equipoActual) {
       setMensaje('Debes seleccionar un equipo.')
@@ -254,7 +264,7 @@ function Equipos() {
     setMensaje('Jugador agregado correctamente.')
   }
 
-  // Quitar integrante
+  // Quitar un integrante
   function quitarJugador(idJugador) {
     if (!equipoActual) {
       return
@@ -283,7 +293,7 @@ function Equipos() {
     setMensaje('Jugador eliminado del equipo.')
   }
 
-  // Activar o desactivar el equipo
+  // Activar o desactivar equipo
   function cambiarEstadoEquipo() {
     if (!equipoActual) {
       return
@@ -302,8 +312,127 @@ function Equipos() {
     setMensaje('Estado del equipo actualizado.')
   }
 
+  // NUEVO: eliminar equipo y cancelar inscripciones
+  function eliminarEquipo() {
+    if (!equipoActual) {
+      return
+    }
+
+    const claveInscripciones = 'esports_inscripciones_ep2'
+    const claveEquipos = 'esports_equipos'
+    const claveDemo = 'esports_equipos_demo_inicializados'
+
+    let inscripciones = []
+    let datosInscripciones
+
+    try {
+      datosInscripciones = localStorage.getItem(
+        claveInscripciones
+      )
+
+      if (datosInscripciones !== null) {
+        inscripciones = JSON.parse(datosInscripciones)
+
+        if (!Array.isArray(inscripciones)) {
+          throw new Error('Inscripciones no válidas')
+        }
+      }
+    } catch {
+      setMensaje(
+        'No se pudieron leer las inscripciones. ' +
+        'No se eliminó ningún equipo.'
+      )
+      return
+    }
+
+    const resultado = eliminarEquipoYInscripciones(
+      equipos,
+      inscripciones,
+      equipoActual.id
+    )
+
+    // Solicitar confirmación al usuario
+    const confirmado = window.confirm(
+      `¿Deseas eliminar el equipo "${equipoActual.nombre}"?\n\n` +
+      `Se cancelarán ${resultado.inscripcionesCanceladas} inscripción(es) ` +
+      'de este equipo.\n\n' +
+      'Esta acción no se puede deshacer.'
+    )
+
+    if (!confirmado) {
+      return
+    }
+
+    // Conservar los datos anteriores por seguridad
+    const datosEquipos = localStorage.getItem(claveEquipos)
+    const datosDemo = localStorage.getItem(claveDemo)
+
+    try {
+      // Cancelar inscripciones del equipo
+      localStorage.setItem(
+        claveInscripciones,
+        JSON.stringify(resultado.inscripcionesRestantes)
+      )
+
+      // Eliminarlo del registro de equipos
+      localStorage.setItem(
+        claveEquipos,
+        JSON.stringify(resultado.equiposRestantes)
+      )
+
+      // Evitar que un equipo demo eliminado reaparezca
+      if (equipoActual.esEjemplo === true) {
+        localStorage.setItem(claveDemo, 'si')
+      }
+
+    } catch {
+      // Intentar restaurar los registros anteriores
+      try {
+        if (datosInscripciones === null) {
+          localStorage.removeItem(claveInscripciones)
+        } else {
+          localStorage.setItem(
+            claveInscripciones,
+            datosInscripciones
+          )
+        }
+
+        if (datosEquipos === null) {
+          localStorage.removeItem(claveEquipos)
+        } else {
+          localStorage.setItem(claveEquipos, datosEquipos)
+        }
+
+        if (datosDemo === null) {
+          localStorage.removeItem(claveDemo)
+        } else {
+          localStorage.setItem(claveDemo, datosDemo)
+        }
+      } catch {
+        // Si falla la restauración, informar al usuario
+      }
+
+      setMensaje(
+        'No fue posible guardar la eliminación. ' +
+        'Revisa los registros antes de volver a intentarlo.'
+      )
+      return
+    }
+
+    // Actualizar la pantalla
+    setEquipos(resultado.equiposRestantes)
+    setIdEquipoSeleccionado(null)
+    setIdJugadorAgregar('')
+
+    setMensaje(
+      `Equipo "${equipoActual.nombre}" eliminado. ` +
+      `Inscripciones canceladas: ${resultado.inscripcionesCanceladas}.`
+    )
+  }
+
   return (
     <div>
+
       <h2 className="mb-3">
         Gestión de Equipos
       </h2>
@@ -380,6 +509,7 @@ function Equipos() {
                   value={formulario.juego}
                   onChange={cambiarCampo}
                 >
+
                   <option value="">
                     Selecciona un juego
                   </option>
@@ -422,6 +552,7 @@ function Equipos() {
                   value={formulario.capitanId}
                   onChange={cambiarCampo}
                 >
+
                   <option value="">
                     Selecciona un capitán
                   </option>
@@ -472,10 +603,13 @@ function Equipos() {
           </p>
 
           {equipos.length === 0 ? (
+
             <p className="text-secondary">
               Todavía no existen equipos registrados.
             </p>
+
           ) : (
+
             <div className="table-responsive">
 
               <table className="table table-striped align-middle">
@@ -494,6 +628,7 @@ function Equipos() {
                 <tbody>
 
                   {equipos.map((equipo) => (
+
                     <tr key={equipo.id}>
 
                       <td>{equipo.id}</td>
@@ -539,9 +674,11 @@ function Equipos() {
                       </td>
 
                     </tr>
+
                   ))}
 
                 </tbody>
+
               </table>
 
             </div>
@@ -552,6 +689,7 @@ function Equipos() {
 
       {/* ADMINISTRAR INTEGRANTES */}
       {equipoActual && (
+
         <div className="card mb-4">
           <div className="card-body">
 
@@ -568,15 +706,28 @@ function Equipos() {
               </strong>
             </p>
 
-            <button
-              type="button"
-              className="btn btn-outline-secondary btn-sm mb-4"
-              onClick={cambiarEstadoEquipo}
-            >
-              {equipoActual.activo
-                ? 'Desactivar equipo'
-                : 'Activar equipo'}
-            </button>
+            {/* ACTIVAR, DESACTIVAR O ELIMINAR */}
+            <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
+
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm"
+                onClick={cambiarEstadoEquipo}
+              >
+                {equipoActual.activo
+                  ? 'Desactivar equipo'
+                  : 'Activar equipo'}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                onClick={eliminarEquipo}
+              >
+                Eliminar equipo
+              </button>
+
+            </div>
 
             {/* AGREGAR JUGADOR */}
             <div className="row g-3 align-items-end mb-4">
@@ -598,6 +749,7 @@ function Equipos() {
                     setIdJugadorAgregar(evento.target.value)
                   }
                 >
+
                   <option value="">
                     Selecciona un jugador
                   </option>
@@ -681,6 +833,7 @@ function Equipos() {
                   })}
 
                 </tbody>
+
               </table>
 
             </div>
@@ -691,12 +844,14 @@ function Equipos() {
 
       {/* MENSAJES */}
       {mensaje && (
+
         <div
           className="alert alert-secondary"
           role="status"
         >
           {mensaje}
         </div>
+
       )}
 
     </div>
