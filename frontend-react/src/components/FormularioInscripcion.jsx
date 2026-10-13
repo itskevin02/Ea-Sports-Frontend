@@ -6,17 +6,16 @@ function FormularioInscripcion({
   equipoSeleccionado,
   integrantesMinimos,
   onConfirmar,
-  children
+  children,
+  puedeConfirmar = true,
+  mensajeBloqueo = ''
 }) {
 
-  // Comprobar si la inscripción es por equipo
   const esInscripcionEquipo = tipo === 'equipo'
 
-  // Comprobar si todavía no se seleccionó un equipo
   const faltaSeleccionarEquipo =
     esInscripcionEquipo && !equipoSeleccionado
 
-  // Comprobar si el equipo seleccionado está incompleto
   const equipoIncompleto =
     esInscripcionEquipo &&
     equipoSeleccionado &&
@@ -25,32 +24,35 @@ function FormularioInscripcion({
       integrantesMinimos
     )
 
-  // Bloquear el botón cuando corresponda
+  // El botón se bloquea si no se cumplen los requisitos
   const bloquearInscripcion =
-    faltaSeleccionarEquipo || equipoIncompleto
+    !puedeConfirmar ||
+    faltaSeleccionarEquipo ||
+    equipoIncompleto
+
+  // Mensaje que verá el usuario
+  let aviso = mensajeBloqueo
+
+  if (!aviso && faltaSeleccionarEquipo) {
+    aviso = 'Selecciona un equipo para continuar.'
+  }
+
+  if (!aviso && equipoIncompleto) {
+    aviso =
+      'El equipo no tiene la cantidad mínima de integrantes.'
+  }
 
   return (
     <form onSubmit={onConfirmar} noValidate>
 
       {children}
 
-      {/* No se ha seleccionado un equipo */}
-      {faltaSeleccionarEquipo && (
+      {aviso && (
         <p className="text-secondary mt-3 mb-0">
-          Selecciona un equipo para continuar
-          con la inscripción.
+          {aviso}
         </p>
       )}
 
-      {/* El equipo seleccionado no cumple los requisitos */}
-      {equipoIncompleto && (
-        <p className="text-danger mt-3 mb-0">
-          El equipo no tiene la cantidad mínima
-          de integrantes para participar en este torneo.
-        </p>
-      )}
-
-      {/* Confirmar inscripción */}
       <button
         type="submit"
         className="btn btn-primary mt-4"
