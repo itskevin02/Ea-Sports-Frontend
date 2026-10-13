@@ -1,4 +1,12 @@
 ﻿
+/*
+  Datos de los torneos de eSports Arena Manager
+  Las imágenes se adaptan a la ruta de Vite
+  para funcionar localmente y en GitHub Pages.
+*/
+
+const baseImagenes = import.meta.env?.BASE_URL || '/'
+
 export const torneosData = [
   {
     id: 1,
@@ -12,7 +20,7 @@ export const torneosData = [
     integrantesMinimos: 1,
     estado: 'Abierto',
     descripcion: 'Torneo de fútbol digital FC26. Modalidad 1v1 con fase de grupos y eliminatoria directa.',
-    imagen: '/torneos/fc26.jpg'
+    imagen: `${baseImagenes}torneos/fc26.jpg`
   },
   {
     id: 2,
@@ -26,7 +34,7 @@ export const torneosData = [
     integrantesMinimos: 1,
     estado: 'Cerrado',
     descripcion: 'Competencia de alto nivel de fútbol americano. Modalidad franquicia rápida.',
-    imagen: '/torneos/madden.jpg'
+    imagen: `${baseImagenes}torneos/madden.jpg`
   },
   {
     id: 3,
@@ -40,7 +48,7 @@ export const torneosData = [
     integrantesMinimos: 3,
     estado: 'Abierto',
     descripcion: 'Torneo por tríos en Battle Royale. Cinco partidas para acumular puntos por bajas y posición.',
-    imagen: '/torneos/apex.jpg'
+    imagen: `${baseImagenes}torneos/apex.jpg`
   },
   {
     id: 4,
@@ -54,7 +62,7 @@ export const torneosData = [
     integrantesMinimos: 2,
     estado: 'Abierto',
     descripcion: 'Competencia de Fortnite en modalidad dúos.',
-    imagen: '/torneos/fortnite.jpg'
+    imagen: `${baseImagenes}torneos/fortnite.jpg`
   },
   {
     id: 5,
@@ -68,7 +76,7 @@ export const torneosData = [
     integrantesMinimos: 5,
     estado: 'Abierto',
     descripcion: 'Competencia de VALORANT para equipos de cinco jugadores.',
-    imagen: '/torneos/valorant.jpg'
+    imagen: `${baseImagenes}torneos/valorant.jpg`
   },
   {
     id: 6,
@@ -82,6 +90,6 @@ export const torneosData = [
     integrantesMinimos: 5,
     estado: 'Abierto',
     descripcion: 'Competencia de Counter-Strike 2 para equipos de cinco jugadores.',
-    imagen: '/torneos/cs2.jpg'
+    imagen: `${baseImagenes}torneos/cs2.jpg`
   }
 ]

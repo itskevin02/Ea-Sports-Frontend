@@ -7,7 +7,18 @@ import LlaveTorneo from '../components/LlaveTorneo'
 import ListaPartidas from '../components/ListaPartidas'
 import ListaParticipantes from '../components/ListaParticipantes'
 
-// Obtener inscripciones nuevas guardadas en el navegador
+// Obtener la fecha actual
+function obtenerFechaActual() {
+  const fecha = new Date()
+
+  const anio = fecha.getFullYear()
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0')
+  const dia = String(fecha.getDate()).padStart(2, '0')
+
+  return `${anio}-${mes}-${dia}`
+}
+
+// Obtener inscripciones guardadas en el navegador
 function cargarParticipantesLocales(torneoId) {
   try {
     const datos = localStorage.getItem(
@@ -44,7 +55,7 @@ function DetalleTorneo({
   partidas = []
 }) {
 
-  // Comprobar que exista un torneo
+  // Validar que exista un torneo
   if (!torneo) {
     return (
       <div className="card">
@@ -60,7 +71,7 @@ function DetalleTorneo({
 
           <button
             type="button"
-            className="btn btn-primary mt-3"
+            className="btn btn-primary"
             onClick={onVolver}
           >
             Volver a Torneos
@@ -71,7 +82,7 @@ function DetalleTorneo({
     )
   }
 
-  // Contar inscritos iniciales y nuevas inscripciones
+  // Calcular inscritos y cupos
   const totalInscritos = obtenerInscritosActuales(torneo)
 
   const disponibles = Math.max(
@@ -79,23 +90,55 @@ function DetalleTorneo({
     torneo.cupos - totalInscritos
   )
 
-  // Obtener participantes de nuestra base de datos simulada
+  // Comprobar el plazo de inscripción
+  const plazoFinalizado =
+    torneo.fechaCierre &&
+    obtenerFechaActual() > torneo.fechaCierre
+
+  const sinCupos = disponibles === 0
+
+  // Determinar si realmente recibe inscripciones
+  const inscripcionesHabilitadas =
+    torneo.estado === 'Abierto' &&
+    !plazoFinalizado &&
+    !sinCupos
+
+  // Mostrar disponibilidad real
+  let disponibilidad = 'Disponible'
+  let colorDisponibilidad = 'text-success'
+
+  if (torneo.estado !== 'Abierto') {
+
+    disponibilidad = 'Inscripciones cerradas'
+    colorDisponibilidad = 'text-secondary'
+
+  } else if (plazoFinalizado) {
+
+    disponibilidad = 'Plazo finalizado'
+    colorDisponibilidad = 'text-danger'
+
+  } else if (sinCupos) {
+
+    disponibilidad = 'Sin cupos'
+    colorDisponibilidad = 'text-danger'
+  }
+
+  // Participantes iniciales
   const participantesIniciales = obtenerParticipantes(
     Number(torneo.id)
   )
 
-  // Obtener participantes registrados desde el formulario
+  // Participantes agregados desde el formulario
   const participantesLocales = cargarParticipantesLocales(
     torneo.id
   )
 
-  // Reunir ambos listados sin modificar los cupos
   const participantesInscritos = [
     ...participantesIniciales,
     ...participantesLocales
   ]
 
-  // El ranking solamente se muestra si el torneo comenzó
+  // Mostrar resultados únicamente en torneos iniciados
   const torneoIniciado =
     torneo.estado === 'En curso' ||
     torneo.estado === 'Finalizado'
@@ -121,7 +164,7 @@ function DetalleTorneo({
 
           <div className="row g-4 align-items-center">
 
-            {/* IMAGEN DEL TORNEO */}
+            {/* IMAGEN */}
             <div className="col-12 col-md-5">
 
               <img
@@ -137,7 +180,7 @@ function DetalleTorneo({
 
             </div>
 
-            {/* DATOS DEL TORNEO */}
+            {/* DATOS */}
             <div className="col-12 col-md-7">
 
               <h3 className="h4 mb-3">
@@ -180,6 +223,15 @@ function DetalleTorneo({
                 </span>
               </p>
 
+              {/* NUEVO: DISPONIBILIDAD */}
+              <p>
+                <strong>Inscripciones:</strong>{' '}
+
+                <span className={colorDisponibilidad}>
+                  {disponibilidad}
+                </span>
+              </p>
+
               <p>
                 <strong>Participantes inscritos:</strong>{' '}
                 {totalInscritos} de {torneo.cupos}
@@ -196,7 +248,6 @@ function DetalleTorneo({
 
           <hr />
 
-          {/* DESCRIPCIÓN */}
           <h4 className="h5">
             Descripción
           </h4>
@@ -208,8 +259,8 @@ function DetalleTorneo({
         </div>
       </div>
 
-      {/* MENSAJES SEGÚN ESTADO */}
-      {torneo.estado === 'Abierto' && (
+      {/* TORNEO ABIERTO Y CON CUPOS */}
+      {inscripcionesHabilitadas && (
         <div className="alert alert-info mb-4">
 
           <h3 className="h6">
@@ -217,17 +268,70 @@ function DetalleTorneo({
           </h3>
 
           <p className="mb-0">
-            La competencia todavía no ha comenzado.
-            Los participantes podrán consultarse cuando
-            se cierren las inscripciones.
-            La clasificación estará disponible cuando
-            se registren resultados.
+            Este torneo todavía recibe participantes.
+            Puedes realizar una inscripción si cumples
+            los requisitos establecidos.
+
+            El listado de participantes se mostrará
+            cuando el torneo cambie al estado Cerrado.
           </p>
 
         </div>
       )}
 
+      {/* NUEVO: PLAZO FINALIZADO */}
+      {torneo.estado === 'Abierto' &&
+        plazoFinalizado && (
+
+        <div className="alert alert-warning mb-4">
+
+          <h3 className="h6">
+            Plazo de inscripción finalizado
+          </h3>
+
+          <p className="mb-0">
+            La fecha límite para inscribirse ya pasó.
+
+            Aunque el torneo todavía aparece registrado
+            como Abierto, no se aceptan nuevas
+            inscripciones.
+
+            Los participantes se podrán consultar
+            cuando el organizador cambie su estado
+            a Cerrado.
+          </p>
+
+        </div>
+      )}
+
+      {/* NUEVO: TORNEO SIN CUPOS */}
+      {torneo.estado === 'Abierto' &&
+        !plazoFinalizado &&
+        sinCupos && (
+
+        <div className="alert alert-warning mb-4">
+
+          <h3 className="h6">
+            Torneo sin cupos disponibles
+          </h3>
+
+          <p className="mb-0">
+            Se alcanzó la cantidad máxima de
+            participantes permitidos.
+
+            No es posible realizar nuevas
+            inscripciones.
+
+            El listado se mostrará cuando
+            el torneo cambie al estado Cerrado.
+          </p>
+
+        </div>
+      )}
+
+      {/* TORNEO CERRADO */}
       {torneo.estado === 'Cerrado' && (
+
         <div className="alert alert-secondary mb-4">
 
           <h3 className="h6">
@@ -236,15 +340,20 @@ function DetalleTorneo({
 
           <p className="mb-0">
             Este torneo no recibe nuevas inscripciones.
-            Ya puedes consultar los participantes registrados.
-            Los resultados estarán disponibles cuando
-            comience la competencia.
+
+            Ya puedes consultar los participantes
+            registrados.
+
+            Los resultados estarán disponibles
+            cuando comience la competencia.
           </p>
 
         </div>
       )}
 
+      {/* TORNEO EN CURSO */}
       {torneo.estado === 'En curso' && (
+
         <div className="alert alert-info mb-4">
 
           <h3 className="h6">
@@ -253,14 +362,17 @@ function DetalleTorneo({
 
           <p className="mb-0">
             La competencia está en desarrollo.
+
             Puedes consultar los participantes
-            y los resultados disponibles.
+            y los resultados que estén disponibles.
           </p>
 
         </div>
       )}
 
+      {/* TORNEO FINALIZADO */}
       {torneo.estado === 'Finalizado' && (
+
         <div className="alert alert-success mb-4">
 
           <h3 className="h6">
@@ -269,6 +381,7 @@ function DetalleTorneo({
 
           <p className="mb-0">
             La competencia ha terminado.
+
             Los participantes y la clasificación final
             estarán disponibles si existen
             resultados registrados.
@@ -277,7 +390,7 @@ function DetalleTorneo({
         </div>
       )}
 
-      {/* PARTICIPANTES INSCRITOS */}
+      {/* LISTADO DE PARTICIPANTES */}
       <ListaParticipantes
         estado={torneo.estado}
         participantes={participantesInscritos}
@@ -302,7 +415,7 @@ function DetalleTorneo({
 
       </div>
 
-      {/* CALENDARIO DE PARTIDAS */}
+      {/* CALENDARIO */}
       <div className="mb-4">
 
         <ListaPartidas
@@ -311,7 +424,7 @@ function DetalleTorneo({
 
       </div>
 
-      {/* VOLVER AL LISTADO */}
+      {/* VOLVER */}
       <div className="text-center">
 
         <button
