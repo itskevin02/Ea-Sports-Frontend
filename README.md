@@ -305,15 +305,63 @@ Durante las pruebas pueden aparecer advertencias de imágenes o recursos estáti
 
 Estas advertencias no impidieron finalizar correctamente las pruebas.
 
+
 ### Cobertura de código
 
-Durante el desarrollo se revisó el contenido de informes de cobertura y se realizaron pruebas de configuración con `karma-coverage`.
+Para complementar las pruebas unitarias se implementó
+cobertura de código utilizando Jasmine, Karma y
+karma-coverage, siguiendo el material de clases.
 
-Sin embargo, la configuración probada no produjo métricas válidas para los archivos fuente React.
+Se creó una configuración independiente para medir
+funciones JavaScript de la carpeta `src/logica`,
+manteniendo intactas las 29 pruebas originales.
 
-Por este motivo, no se incluyen porcentajes de cobertura no verificados.
+#### Módulos analizados
 
-La generación de un informe de cobertura compatible con React queda como una mejora pendiente.
+- `validarInscripcion.js`: validaciones de inscripción.
+- `eliminarInscripcion.js`: eliminación de inscripciones.
+- `ranking.js`: ordenamiento y cálculo de puntos.
+- `eliminarEquipo.js`: eliminación de equipos.
+- `gestionarJugadores.js`: actualización y eliminación de jugadores.
+
+#### Resultados de cobertura
+
+| Indicador | Resultado |
+|---|---:|
+| Sentencias | 100 % (33/33) |
+| Ramas | 100 % (19/19) |
+| Funciones | 100 % (15/15) |
+| Líneas | 100 % (32/32) |
+
+Estos porcentajes corresponden exclusivamente a los
+cinco módulos seleccionados de lógica, no a la totalidad
+del frontend React.
+
+#### Ejecutar la cobertura
+
+Desde la carpeta `frontend-react`:
+
+```powershell
+.\node_modules\.bin\karma.cmd start karma.coverage.conf.cjs
+```
+
+Para abrir el informe HTML:
+
+```powershell
+Start-Process .\coverage\html\index.html
+```
+
+Las pruebas de cobertura están organizadas en
+`pruebas-cobertura` y se ejecutan independientemente
+de las 29 pruebas originales.
+
+La medición permite identificar el código ejecutado
+por las pruebas y comprobar el comportamiento de
+los módulos seleccionados.
+
+Como mejora futura se propone ampliar la cobertura
+a otros módulos y componentes React.
+
 
 ## 8. Compilación de producción
 

@@ -64,15 +64,57 @@ Las 29 pruebas unitarias finalizaron correctamente.
 
 Las pruebas utilizan Jasmine y Karma, con karma-esbuild para procesar JavaScript y JSX.
 
+
 ## Cobertura de código
 
-Se revisó el procedimiento de cobertura con karma-coverage incluido en el material de clases.
+Se implementó cobertura utilizando Jasmine, Karma
+y karma-coverage.
 
-La configuración experimental no generó porcentajes válidos para los archivos fuente React.
+La configuración se encuentra en:
 
-Por lo tanto, no se reportan métricas de cobertura no verificadas.
+`karma.coverage.conf.cjs`
 
-La implementación de una cobertura compatible queda como mejora pendiente.
+Las pruebas específicas están organizadas en:
+
+`pruebas-cobertura/`
+
+### Ejecutar la cobertura
+
+```powershell
+.\node_modules\.bin\karma.cmd start karma.coverage.conf.cjs
+```
+
+Abrir el informe HTML:
+
+```powershell
+Start-Process .\coverage\html\index.html
+```
+
+### Resultados
+
+Se analizaron cinco módulos de `src/logica`:
+
+- Validaciones de inscripción.
+- Eliminación de inscripciones.
+- Ranking y cálculo de puntos.
+- Eliminación de equipos.
+- Gestión de jugadores.
+
+| Métrica | Resultado |
+|---|---:|
+| Sentencias | 100 % |
+| Ramas | 100 % |
+| Funciones | 100 % |
+| Líneas | 100 % |
+
+Estos resultados corresponden solo a los cinco
+módulos analizados.
+
+Las 29 pruebas originales continúan ejecutándose
+con `npm test`.
+
+La cobertura total del frontend React no ha sido
+medida mediante esta configuración.
 
 ## Compilar para producción
 
