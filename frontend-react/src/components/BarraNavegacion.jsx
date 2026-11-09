@@ -8,6 +8,7 @@ function BarraNavegacion({ vistaActual, cambiarVista }) {
   const secciones = [
     { id: 'inicio', nombre: 'Inicio' },
     { id: 'torneos', nombre: 'Torneos' },
+    { id: 'juegos', nombre: 'Juegos' },
     { id: 'detalle', nombre: 'Detalle torneo' },
     { id: 'inscripcion', nombre: 'Inscripción' },
     { id: 'equipos', nombre: 'Equipos' },
@@ -76,7 +77,7 @@ function BarraNavegacion({ vistaActual, cambiarVista }) {
 
           </div>
 
-          {/* MENÚ PARA CELULARES Y TABLETS */}
+          {/* MENÚ PARA CELULARES Y TABLETAS */}
           <div
             id="menuMovil"
             className={`d-lg-none flex-column gap-2 mt-3 ${
