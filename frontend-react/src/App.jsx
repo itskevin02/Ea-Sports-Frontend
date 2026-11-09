@@ -42,7 +42,7 @@ function App() {
         cambiarVista={setVistaActual}
       />
 
-      <main className="container py-4">
+      <main className="container-fluid px-3 px-lg-4 py-4">
 
         {vistaActual === 'inicio' ? (
           <Inicio

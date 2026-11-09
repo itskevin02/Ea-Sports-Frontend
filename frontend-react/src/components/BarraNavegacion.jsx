@@ -27,7 +27,7 @@ function BarraNavegacion({ vistaActual, cambiarVista }) {
       className="navbar navbar-dark bg-dark border-bottom border-secondary"
       aria-label="Navegación principal"
     >
-      <div className="container py-2">
+      <div className="container-fluid px-3 px-lg-4 py-2">
 
         <div className="w-100">
 

@@ -226,3 +226,27 @@
     min-height: auto;
   }
 }
+
+.inicio-estadistica,
+.inicio-torneo,
+.inicio-acceso {
+  background-color: #293241;
+  color: #ffffff;
+  border: 1px solid #40506a;
+}
+
+.inicio-estadistica p,
+.inicio-estadistica small,
+.inicio-torneo-juego,
+.inicio-torneo-info span,
+.inicio-acceso p {
+  color: #cbd5e1;
+}
+
+.inicio-estadistica h2 {
+  color: #60a5fa;
+}
+
+.inicio-torneo-info {
+  border-bottom-color: #40506a;
+}
