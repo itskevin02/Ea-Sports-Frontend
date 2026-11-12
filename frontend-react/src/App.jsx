@@ -16,6 +16,9 @@ import Administracion from './pages/Administracion'
 import Equipos from './pages/Equipos'
 import Inscripcion from './pages/Inscripcion'
 
+// Nueva pantalla EP3
+import Juegos from './pages/Juegos'
+
 import './App.css'
 
 function App() {
@@ -39,7 +42,7 @@ function App() {
         cambiarVista={setVistaActual}
       />
 
-      <main className="container py-4">
+      <main className="container-fluid px-3 px-lg-4 py-4">
 
         {vistaActual === 'inicio' ? (
           <Inicio
@@ -49,6 +52,9 @@ function App() {
 
         ) : vistaActual === 'torneos' ? (
           <Torneos onVerDetalle={mostrarDetalle} />
+
+        ) : vistaActual === 'juegos' ? (
+          <Juegos />
 
         ) : vistaActual === 'detalle' ? (
           <DetalleTorneo
