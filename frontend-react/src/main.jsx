@@ -6,17 +6,18 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import './index.css'
 
 import App from './App.jsx'
+import AuthProvider from './auth/AuthProvider'
 
 import {
   inicializarDatosDemoSanciones
 } from './data/datosDemoSanciones'
 
-// Cargar registros de demostración una sola vez
-// sin eliminar los registros existentes
 inicializarDatosDemoSanciones()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </StrictMode>
 )

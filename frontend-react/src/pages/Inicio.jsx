@@ -29,7 +29,7 @@ function obtenerFechaActual() {
   return `${anio}-${mes}-${dia}`
 }
 
-export function Inicio({ onNavegar, onVerDetalle }) {
+export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
   const equipos = cargarRegistros('esports_equipos')
   const inscripciones = cargarRegistros('esports_inscripciones_ep2')
   const fechaActual = obtenerFechaActual()
@@ -277,6 +277,34 @@ export function Inicio({ onNavegar, onVerDetalle }) {
         <div className="row g-3">
 
           <div className="col-12 col-md-4">
+              {esAdmin && (
+        <div className="col-12 col-md-4">
+          <div className="inicio-acceso">
+
+            <div className="inicio-acceso-icono">
+              <span>03</span>
+            </div>
+
+            <h3 className="h5">
+              Administración
+            </h3>
+
+            <p>
+              Consulta y administra los registros
+              disponibles en la plataforma.
+            </p>
+
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={() => onNavegar('administracion')}
+            >
+              Panel de administración
+            </button>
+
+          </div>
+        </div>
+      )}
             <div className="inicio-acceso">
 
               <div className="inicio-acceso-icono">
