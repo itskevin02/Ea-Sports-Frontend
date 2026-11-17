@@ -1,8 +1,12 @@
 
 import { useState, useEffect } from 'react'
 import { juegosService } from '../services/juegos'
+import { useAuth } from '../auth/useAuth'
 
 function Juegos() {
+
+  const { usuario } = useAuth()
+  const esAdmin = usuario?.rol === 'ADMIN'
 
   const formularioVacio = {
     nombre: '',
@@ -55,6 +59,10 @@ function Juegos() {
   async function guardar(evento) {
     evento.preventDefault()
 
+    if (!esAdmin) {
+      return
+    }
+
     setError('')
     setMensaje('')
     setGuardando(true)
@@ -73,7 +81,7 @@ function Juegos() {
 
         const nuevo = await juegosService.crear(datos)
 
-        setJuegos([...juegos, nuevo])
+        setJuegos((actuales) => [...actuales, nuevo])
         setMensaje('Videojuego registrado correctamente.')
 
       } else {
@@ -83,9 +91,11 @@ function Juegos() {
           datos
         )
 
-        setJuegos(juegos.map((juego) =>
-          juego.id === idEdicion ? actualizado : juego
-        ))
+        setJuegos((actuales) =>
+          actuales.map((juego) =>
+            juego.id === idEdicion ? actualizado : juego
+          )
+        )
 
         setMensaje('Videojuego actualizado correctamente.')
       }
@@ -103,6 +113,10 @@ function Juegos() {
 
   // Cargar los datos del juego que se editará
   function editar(juego) {
+    if (!esAdmin) {
+      return
+    }
+
     setForm({
       nombre: juego.nombre,
       genero: juego.genero,
@@ -125,13 +139,20 @@ function Juegos() {
 
   // Eliminar un juego del backend
   async function eliminar(id) {
+    if (!esAdmin) {
+      return
+    }
+
     setError('')
     setMensaje('')
 
     try {
       await juegosService.eliminar(id)
 
-      setJuegos(juegos.filter((juego) => juego.id !== id))
+      setJuegos((actuales) =>
+        actuales.filter((juego) => juego.id !== id)
+      )
+
       setMensaje('Videojuego eliminado correctamente.')
 
       if (idEdicion === id) {
@@ -150,129 +171,133 @@ function Juegos() {
         Juegos disponibles
       </h2>
 
-      {/* FORMULARIO */}
-      <div className="card bg-dark text-white border-secondary mb-4">
-        <div className="card-body">
+      {/* FORMULARIO SOLO PARA ADMIN */}
+      {esAdmin && (
 
-          <h3 className="h5 mb-3">
-            {idEdicion === null
-              ? 'Registrar videojuego'
-              : 'Editar videojuego'}
-          </h3>
+        <div className="card bg-dark text-white border-secondary mb-4">
+          <div className="card-body">
 
-          <form onSubmit={guardar}>
-            <div className="row g-3">
+            <h3 className="h5 mb-3">
+              {idEdicion === null
+                ? 'Registrar videojuego'
+                : 'Editar videojuego'}
+            </h3>
 
-              <div className="col-12 col-md-6">
-                <label className="form-label" htmlFor="nombre">
-                  Nombre
-                </label>
+            <form onSubmit={guardar}>
+              <div className="row g-3">
 
-                <input
-                  id="nombre"
-                  name="nombre"
-                  className="form-control"
-                  value={form.nombre}
-                  onChange={cambiar}
-                  required
-                />
-              </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label" htmlFor="nombre">
+                    Nombre
+                  </label>
 
-              <div className="col-12 col-md-6">
-                <label className="form-label" htmlFor="genero">
-                  Género
-                </label>
+                  <input
+                    id="nombre"
+                    name="nombre"
+                    className="form-control"
+                    value={form.nombre}
+                    onChange={cambiar}
+                    required
+                  />
+                </div>
 
-                <input
-                  id="genero"
-                  name="genero"
-                  className="form-control"
-                  value={form.genero}
-                  onChange={cambiar}
-                  required
-                />
-              </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label" htmlFor="genero">
+                    Género
+                  </label>
 
-              <div className="col-12 col-md-6">
-                <label className="form-label" htmlFor="modalidad">
-                  Modalidad
-                </label>
+                  <input
+                    id="genero"
+                    name="genero"
+                    className="form-control"
+                    value={form.genero}
+                    onChange={cambiar}
+                    required
+                  />
+                </div>
 
-                <input
-                  id="modalidad"
-                  name="modalidad"
-                  className="form-control"
-                  value={form.modalidad}
-                  onChange={cambiar}
-                  required
-                />
-              </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label" htmlFor="modalidad">
+                    Modalidad
+                  </label>
 
-              <div className="col-12 col-md-3">
-                <label className="form-label" htmlFor="jugadores">
-                  Jugadores por equipo
-                </label>
+                  <input
+                    id="modalidad"
+                    name="modalidad"
+                    className="form-control"
+                    value={form.modalidad}
+                    onChange={cambiar}
+                    required
+                  />
+                </div>
 
-                <input
-                  id="jugadores"
-                  name="jugadoresPorEquipo"
-                  type="number"
-                  min="1"
-                  className="form-control"
-                  value={form.jugadoresPorEquipo}
-                  onChange={cambiar}
-                  required
-                />
-              </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label" htmlFor="jugadores">
+                    Jugadores por equipo
+                  </label>
 
-              <div className="col-12 col-md-3">
-                <label className="form-label" htmlFor="estado">
-                  Estado
-                </label>
+                  <input
+                    id="jugadores"
+                    name="jugadoresPorEquipo"
+                    type="number"
+                    min="1"
+                    className="form-control"
+                    value={form.jugadoresPorEquipo}
+                    onChange={cambiar}
+                    required
+                  />
+                </div>
 
-                <select
-                  id="estado"
-                  name="estado"
-                  className="form-select"
-                  value={form.estado}
-                  onChange={cambiar}
-                >
-                  <option value="ACTIVO">ACTIVO</option>
-                  <option value="INACTIVO">INACTIVO</option>
-                </select>
-              </div>
+                <div className="col-12 col-md-3">
+                  <label className="form-label" htmlFor="estado">
+                    Estado
+                  </label>
 
-              <div className="col-12 d-flex gap-2">
-
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={guardando}
-                >
-                  {guardando
-                    ? 'Guardando...'
-                    : idEdicion === null
-                      ? 'Registrar juego'
-                      : 'Guardar cambios'}
-                </button>
-
-                {idEdicion !== null && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-light"
-                    onClick={cancelarEdicion}
+                  <select
+                    id="estado"
+                    name="estado"
+                    className="form-select"
+                    value={form.estado}
+                    onChange={cambiar}
                   >
-                    Cancelar
+                    <option value="ACTIVO">ACTIVO</option>
+                    <option value="INACTIVO">INACTIVO</option>
+                  </select>
+                </div>
+
+                <div className="col-12 d-flex gap-2">
+
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={guardando}
+                  >
+                    {guardando
+                      ? 'Guardando...'
+                      : idEdicion === null
+                        ? 'Registrar juego'
+                        : 'Guardar cambios'}
                   </button>
-                )}
+
+                  {idEdicion !== null && (
+                    <button
+                      type="button"
+                      className="btn btn-outline-light"
+                      onClick={cancelarEdicion}
+                    >
+                      Cancelar
+                    </button>
+                  )}
+
+                </div>
 
               </div>
+            </form>
 
-            </div>
-          </form>
-
+          </div>
         </div>
-      </div>
+
+      )}
 
       {/* MENSAJES */}
       {mensaje && (
@@ -326,25 +351,28 @@ function Juegos() {
 
                   <p>Estado: {juego.estado}</p>
 
-                  <div className="d-flex gap-2 mt-3">
+                  {/* ACCIONES SOLO PARA ADMIN */}
+                  {esAdmin && (
+                    <div className="d-flex gap-2 mt-3">
 
-                    <button
-                      type="button"
-                      className="btn btn-warning btn-sm"
-                      onClick={() => editar(juego)}
-                    >
-                      Editar
-                    </button>
+                      <button
+                        type="button"
+                        className="btn btn-warning btn-sm"
+                        onClick={() => editar(juego)}
+                      >
+                        Editar
+                      </button>
 
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      onClick={() => eliminar(juego.id)}
-                    >
-                      Eliminar
-                    </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        onClick={() => eliminar(juego.id)}
+                      >
+                        Eliminar
+                      </button>
 
-                  </div>
+                    </div>
+                  )}
 
                 </div>
               </div>
