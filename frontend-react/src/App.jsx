@@ -14,6 +14,7 @@ import Equipos from './pages/Equipos'
 import Inscripcion from './pages/Inscripcion'
 import Juegos from './pages/Juegos'
 import Login from './pages/Login'
+import DetalleTorneoApi from './pages/DetalleTorneoApi'
 
 import './App.css'
 
@@ -107,11 +108,20 @@ function App() {
         ) : vistaActual === 'juegos' ? (
           <Juegos />
 
-        ) : vistaActual === 'detalle' ? (
-          <DetalleTorneo
-            torneo={torneoSeleccionado}
-            onVolver={volverATorneos}
-          />
+        
+) : vistaActual === 'detalle' ? (
+  torneoSeleccionado?.cantidadEquipos !== undefined ? (
+    <DetalleTorneoApi
+      torneoId={torneoSeleccionado.id}
+      onVolver={volverATorneos}
+    />
+  ) : (
+    <DetalleTorneo
+      torneo={torneoSeleccionado}
+      onVolver={volverATorneos}
+    />
+  )
+
 
         ) : vistaActual === 'inscripcion' ? (
           <Inscripcion />
