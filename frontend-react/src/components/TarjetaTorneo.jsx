@@ -1,7 +1,6 @@
 ﻿
 import { obtenerInscritosActuales } from '../logica/contarInscripciones'
 
-// Obtener la fecha actual en formato YYYY-MM-DD
 function obtenerFechaActual() {
   const fecha = new Date()
 
@@ -14,19 +13,22 @@ function obtenerFechaActual() {
 
 export const TarjetaTorneo = ({ torneo, onVerDetalle }) => {
 
-  const totalInscritos = obtenerInscritosActuales(torneo)
+  const esBackend = torneo.cantidadEquipos !== undefined
 
-  const cuposDisponibles = Math.max(
-    0,
-    torneo.cupos - totalInscritos
-  )
+  const totalInscritos = esBackend
+    ? null
+    : obtenerInscritosActuales(torneo)
 
-  // Estado real de las inscripciones
+  const cuposDisponibles = esBackend
+    ? null
+    : Math.max(0, torneo.cupos - totalInscritos)
+
+  const estado = torneo.estado.toLowerCase()
+
   let disponibilidad = 'Disponible'
   let colorDisponibilidad = 'text-success'
 
-  if (torneo.estado !== 'Abierto') {
-
+  if (estado !== 'abierto') {
     disponibilidad = 'Inscripciones cerradas'
     colorDisponibilidad = 'text-secondary'
 
@@ -34,15 +36,18 @@ export const TarjetaTorneo = ({ torneo, onVerDetalle }) => {
     torneo.fechaCierre &&
     obtenerFechaActual() > torneo.fechaCierre
   ) {
-
     disponibilidad = 'Plazo finalizado'
     colorDisponibilidad = 'text-danger'
 
-  } else if (cuposDisponibles === 0) {
-
+  } else if (!esBackend && cuposDisponibles === 0) {
     disponibilidad = 'Sin cupos'
     colorDisponibilidad = 'text-danger'
   }
+
+  const juego = torneo.juego ||
+    (torneo.juegoId
+      ? `ID ${torneo.juegoId}`
+      : 'No especificado')
 
   return (
     <div className="col-12 col-md-6 col-xl-4 mb-4">
@@ -50,25 +55,34 @@ export const TarjetaTorneo = ({ torneo, onVerDetalle }) => {
       <div className="card h-100 shadow-sm border-0">
 
         {/* IMAGEN DEL TORNEO */}
-        <img
-          src={torneo.imagen}
-          className="card-img-top"
-          alt={torneo.nombre}
-          style={{
-            height: '180px',
-            width: '100%',
-            objectFit: 'cover'
-          }}
-        />
+        {torneo.imagen ? (
+          <img
+            src={torneo.imagen}
+            className="card-img-top"
+            alt={torneo.nombre}
+            style={{
+              height: '180px',
+              width: '100%',
+              objectFit: 'cover'
+            }}
+          />
+        ) : (
+          <div
+            className="bg-secondary text-white d-flex align-items-center justify-content-center"
+            style={{ height: '180px' }}
+          >
+            Imagen no disponible
+          </div>
+        )}
 
         <div className="card-body d-flex flex-column">
 
           {/* ESTADO DEL TORNEO */}
           <span
             className={`badge ${
-              torneo.estado === 'Abierto'
+              estado === 'abierto'
                 ? 'bg-success'
-                : torneo.estado === 'En curso'
+                : estado === 'en curso'
                   ? 'bg-primary'
                   : 'bg-secondary'
             } w-auto ms-auto mb-2`}
@@ -83,7 +97,7 @@ export const TarjetaTorneo = ({ torneo, onVerDetalle }) => {
 
           {/* JUEGO */}
           <p className="card-text text-muted mb-1">
-            Juego: {torneo.juego}
+            Juego: {juego}
           </p>
 
           {/* PLATAFORMA */}
@@ -91,15 +105,21 @@ export const TarjetaTorneo = ({ torneo, onVerDetalle }) => {
             Plataforma: {torneo.plataforma}
           </p>
 
-          {/* DESCRIPCIÓN */}
+          {/* DESCRIPCION */}
           <p className="card-text small text-secondary flex-grow-1">
             {torneo.descripcion}
           </p>
 
-          {/* DISPONIBILIDAD PARA INSCRIPCIONES */}
-          <p className={`${colorDisponibilidad} fw-semibold small mb-2`}>
-            Inscripciones: {disponibilidad}
-          </p>
+          {/* INFORMACION DEL TORNEO */}
+          {esBackend ? (
+            <p className="text-secondary small mb-2">
+              Ubicación: {torneo.ubicacion}
+            </p>
+          ) : (
+            <p className={`${colorDisponibilidad} fw-semibold small mb-2`}>
+              Inscripciones: {disponibilidad}
+            </p>
+          )}
 
           {/* FECHA DE CIERRE */}
           {torneo.fechaCierre && (
@@ -108,13 +128,20 @@ export const TarjetaTorneo = ({ torneo, onVerDetalle }) => {
             </p>
           )}
 
-          {/* CUPOS Y DETALLE */}
+          {/* EQUIPOS Y DETALLE */}
           <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
 
-            <small className="text-muted">
-              Cupos: {totalInscritos}/{torneo.cupos}
-            </small>
+            {esBackend ? (
+              <small className="text-muted">
+                Equipos permitidos: {torneo.cantidadEquipos}
+              </small>
+            ) : (
+              <small className="text-muted">
+                Cupos: {totalInscritos}/{torneo.cupos}
+              </small>
+            )}
 
+            {/* BOTON VER DETALLE */}
             <button
               type="button"
               className="btn btn-outline-primary btn-sm"

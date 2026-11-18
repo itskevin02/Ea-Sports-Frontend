@@ -18,10 +18,13 @@ module.exports = function (config) {
     },
 
     esbuild: {
-      target: 'es2022',
-      jsx: 'automatic',
-      loader: { '.js': 'jsx' }
-    },
+  target: 'es2022',
+  jsx: 'automatic',
+  loader: { '.js': 'jsx' },
+  define: {
+    'import.meta.env.VITE_API_URL': '"http://localhost:8080"'
+  }
+},
 
     reporters: ['progress'],
 

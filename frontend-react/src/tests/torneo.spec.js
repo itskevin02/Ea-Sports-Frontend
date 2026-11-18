@@ -11,156 +11,196 @@ import {
 import { TarjetaTorneo } from '../components/TarjetaTorneo'
 import { Torneos } from '../pages/Torneos'
 
-afterEach(() => {
-  cleanup()
-})
+const torneosPrueba = [
+  {
+    id: 1,
+    nombre: 'Torneo de Prueba EP3',
+    ubicacion: 'Online',
+    cantidadEquipos: 8,
+    estado: 'Abierto',
+    juegoId: 1,
+    plataforma: 'PC',
+    fechaInicio: '2026-12-15',
+    fechaCierre: '2026-12-10',
+    descripcion: 'Torneo para las pruebas',
+    imagen: ''
+  },
+  {
+    id: 2,
+    nombre: 'Liga de Prueba EP3',
+    ubicacion: 'Online',
+    cantidadEquipos: 16,
+    estado: 'Finalizado',
+    juegoId: 2,
+    plataforma: 'PS5',
+    fechaInicio: '2026-12-22',
+    fechaCierre: '2026-12-20',
+    descripcion: 'Segunda competencia de prueba',
+    imagen: ''
+  }
+]
 
-const torneoMock = {
-  id: 1,
-  nombre: 'Copa EA Sports FC 24',
-  juego: 'EA Sports FC',
-  plataforma: 'PC',
-  estado: 'Abierto',
-  inscritos: 20,
-  cupos: 32,
-  descripcion: 'Torneo de prueba',
-  imagen: '/torneo-prueba.png'
+function respuestaApi(datos) {
+  return {
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve(datos)
+  }
 }
 
-describe('Pruebas unitarias de Torneos', () => {
+describe('Pruebas de Torneos EP3', () => {
 
-  it('01. Muestra correctamente los datos del torneo', () => {
+  beforeEach(() => {
+    spyOn(window, 'fetch').and.returnValue(
+      Promise.resolve(respuestaApi(torneosPrueba))
+    )
+  })
 
-    render(<TarjetaTorneo torneo={torneoMock} />)
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('01. Muestra los datos de un torneo del backend', () => {
+
+    render(
+      <TarjetaTorneo torneo={torneosPrueba[0]} />
+    )
 
     expect(
-      screen.getByText('Copa EA Sports FC 24')
+      screen.getByText('Torneo de Prueba EP3')
     ).not.toBeNull()
 
     expect(
-      screen.getByText('Juego: EA Sports FC')
+      screen.getByText('Juego: ID 1')
     ).not.toBeNull()
 
     expect(
-      screen.getByText('Abierto')
-    ).not.toBeNull()
-
-    expect(
-      screen.getByText('Cupos: 20/32')
+      screen.getByText('Equipos permitidos: 8')
     ).not.toBeNull()
 
   })
 
-  it('02. Filtra los torneos segun la busqueda y el estado', () => {
+  it('02. Carga torneos desde la API REST', async () => {
 
     render(<Torneos />)
+
+    await screen.findByText('Torneo de Prueba EP3')
+
+    expect(
+      screen.getByText('Liga de Prueba EP3')
+    ).not.toBeNull()
+
+    expect(
+      screen.getByText('Torneos encontrados: 2')
+    ).not.toBeNull()
+
+    expect(window.fetch).toHaveBeenCalled()
+
+  })
+
+  it('03. Filtra torneos por nombre', async () => {
+
+    render(<Torneos />)
+
+    await screen.findByText('Torneo de Prueba EP3')
 
     const buscador = screen.getByPlaceholderText(
       'Buscar por nombre o juego...'
     )
 
     fireEvent.change(buscador, {
-      target: { value: 'Madden' }
+      target: { value: 'Torneo de Prueba' }
     })
 
     expect(
-      screen.getByText('Liga Madden NFL Master')
+      screen.getByText('Torneo de Prueba EP3')
     ).not.toBeNull()
 
     expect(
-      screen.queryByText('Copa EA Sports FC 26')
+      screen.queryByText('Liga de Prueba EP3')
     ).toBeNull()
 
-    const selectorEstado = screen.getByLabelText(
+  })
+
+  it('04. Filtra torneos por estado', async () => {
+
+    render(<Torneos />)
+
+    await screen.findByText('Torneo de Prueba EP3')
+
+    const selector = screen.getByLabelText(
       'Filtrar por estado'
     )
 
-    fireEvent.change(selectorEstado, {
-      target: { value: 'Abierto' }
+    fireEvent.change(selector, {
+      target: { value: 'Finalizado' }
     })
 
     expect(
-      screen.getByText(
-        'No se encontraron torneos con esos criterios.'
-      )
-    ).not.toBeNull()
-
-  })
-
-  it('03. Ejecuta la funcion al presionar Ver Detalle', () => {
-
-    const funcionDetalle = jasmine.createSpy('funcionDetalle')
-
-    render(
-      <TarjetaTorneo
-        torneo={torneoMock}
-        onVerDetalle={funcionDetalle}
-      />
-    )
-
-    const boton = screen.getByRole('button', {
-      name: 'Ver Detalle'
-    })
-
-    fireEvent.click(boton)
-
-    expect(funcionDetalle).toHaveBeenCalledWith(torneoMock)
-
-  })
-
-  it('04. Filtra los torneos por juego', () => {
-
-    render(<Torneos />)
-
-    const selectorJuego = screen.getByLabelText(
-      'Filtrar por juego'
-    )
-
-    fireEvent.change(selectorJuego, {
-      target: { value: 'Fortnite' }
-    })
-
-    expect(
-      screen.getByText('Copa Fortnite Dúos')
+      screen.getByText('Liga de Prueba EP3')
     ).not.toBeNull()
 
     expect(
-      screen.queryByText('Liga VALORANT')
+      screen.queryByText('Torneo de Prueba EP3')
     ).toBeNull()
 
   })
 
-  it('05. Filtra torneos por rango de fechas', () => {
+  it('05. Filtra torneos por juego', async () => {
 
     render(<Torneos />)
 
+    await screen.findByText('Torneo de Prueba EP3')
+
+    const selector = screen.getByLabelText(
+      'Filtrar por juego'
+    )
+
+    fireEvent.change(selector, {
+      target: { value: 'Juego ID 2' }
+    })
+
+    expect(
+      screen.getByText('Liga de Prueba EP3')
+    ).not.toBeNull()
+
+    expect(
+      screen.queryByText('Torneo de Prueba EP3')
+    ).toBeNull()
+
+  })
+
+  it('06. Filtra torneos por rango de fechas', async () => {
+
+    render(<Torneos />)
+
+    await screen.findByText('Torneo de Prueba EP3')
+
     fireEvent.change(
       screen.getByLabelText('Fecha de inicio desde'),
-      { target: { value: '2026-11-15' } }
+      { target: { value: '2026-12-10' } }
     )
 
     fireEvent.change(
       screen.getByLabelText('Fecha de inicio hasta'),
-      { target: { value: '2026-11-20' } }
+      { target: { value: '2026-12-20' } }
     )
 
     expect(
-      screen.getByText('Copa EA Sports FC 26')
+      screen.getByText('Torneo de Prueba EP3')
     ).not.toBeNull()
 
     expect(
-      screen.getByText('Championship Apex Legends')
-    ).not.toBeNull()
-
-    expect(
-      screen.queryByText('Liga Madden NFL Master')
+      screen.queryByText('Liga de Prueba EP3')
     ).toBeNull()
 
   })
 
-  it('06. Rechaza un rango de fechas incorrecto', () => {
+  it('07. Rechaza un rango de fechas incorrecto', async () => {
 
     render(<Torneos />)
+
+    await screen.findByText('Torneo de Prueba EP3')
 
     fireEvent.change(
       screen.getByLabelText('Fecha de inicio desde'),
@@ -169,7 +209,7 @@ describe('Pruebas unitarias de Torneos', () => {
 
     fireEvent.change(
       screen.getByLabelText('Fecha de inicio hasta'),
-      { target: { value: '2026-11-01' } }
+      { target: { value: '2026-12-01' } }
     )
 
     expect(
@@ -177,6 +217,61 @@ describe('Pruebas unitarias de Torneos', () => {
         /La fecha inicial no puede ser posterior/
       )
     ).not.toBeNull()
+
+  })
+
+  it('08. Muestra el mensaje cuando no hay torneos', async () => {
+
+    window.fetch.and.returnValue(
+      Promise.resolve(respuestaApi([]))
+    )
+
+    render(<Torneos />)
+
+    expect(
+      await screen.findByText(
+        'No hay torneos registrados en el servidor.'
+      )
+    ).not.toBeNull()
+
+  })
+
+  it('09. Muestra un error si falla la conexion', async () => {
+
+    window.fetch.and.returnValue(
+      Promise.reject(new Error('Error de prueba'))
+    )
+
+    render(<Torneos />)
+
+    expect(
+      await screen.findByText(
+        'No se pudo conectar con el servidor.'
+      )
+    ).not.toBeNull()
+
+  })
+
+  it('10. Ejecuta la funcion al presionar Ver Detalle', () => {
+
+    const funcionDetalle = jasmine.createSpy('funcionDetalle')
+
+    render(
+      <TarjetaTorneo
+        torneo={torneosPrueba[0]}
+        onVerDetalle={funcionDetalle}
+      />
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Ver Detalle'
+      })
+    )
+
+    expect(funcionDetalle).toHaveBeenCalledWith(
+      torneosPrueba[0]
+    )
 
   })
 

@@ -1,9 +1,25 @@
 ﻿
-import { useState } from 'react'
-import { torneosData } from '../data/torneos'
+import { useState, useEffect } from 'react'
+import { torneosService } from '../services/torneos'
 import { TarjetaTorneo } from '../components/TarjetaTorneo'
 
+function nombreJuego(torneo) {
+  if (torneo.juego) {
+    return torneo.juego
+  }
+
+  if (torneo.juegoId) {
+    return `Juego ID ${torneo.juegoId}`
+  }
+
+  return 'Sin juego asociado'
+}
+
 export const Torneos = ({ onVerDetalle }) => {
+
+  const [torneos, setTorneos] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
 
   const [busqueda, setBusqueda] = useState('')
   const [juegoFiltro, setJuegoFiltro] = useState('Todos')
@@ -11,33 +27,53 @@ export const Torneos = ({ onVerDetalle }) => {
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
 
-  // Juegos disponibles para el filtro
+  useEffect(() => {
+
+    async function cargarTorneos() {
+      try {
+        setCargando(true)
+        setError('')
+
+        const datos = await torneosService.listar()
+        setTorneos(datos)
+
+      } catch (err) {
+        setError(err.message)
+
+      } finally {
+        setCargando(false)
+      }
+    }
+
+    cargarTorneos()
+
+  }, [])
+
   const juegos = [
-    ...new Set(torneosData.map((torneo) => torneo.juego))
+    ...new Set(torneos.map((torneo) => nombreJuego(torneo)))
   ]
 
-  // Validar las fechas ingresadas
   const fechasInvalidas =
     fechaDesde !== '' &&
     fechaHasta !== '' &&
     fechaDesde > fechaHasta
 
-  // Aplicar los filtros
-  const torneosFiltrados = torneosData.filter((torneo) => {
+  const torneosFiltrados = torneos.filter((torneo) => {
+
+    const juego = nombreJuego(torneo)
 
     const coincideTexto =
       torneo.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      torneo.juego.toLowerCase().includes(busqueda.toLowerCase())
+      juego.toLowerCase().includes(busqueda.toLowerCase())
 
     const coincideJuego =
       juegoFiltro === 'Todos' ||
-      torneo.juego === juegoFiltro
+      juego === juegoFiltro
 
     const coincideEstado =
       estadoFiltro === 'Todos' ||
-      torneo.estado === estadoFiltro
+      torneo.estado.toLowerCase() === estadoFiltro.toLowerCase()
 
-    // El rango utiliza la fecha de inicio del torneo
     const coincideDesde =
       fechaDesde === '' ||
       torneo.fechaInicio >= fechaDesde
@@ -56,7 +92,6 @@ export const Torneos = ({ onVerDetalle }) => {
     )
   })
 
-  // Restablecer los filtros
   function limpiarFiltros() {
     setBusqueda('')
     setJuegoFiltro('Todos')
@@ -72,7 +107,7 @@ export const Torneos = ({ onVerDetalle }) => {
         Torneos Disponibles
       </h2>
 
-      {/* FILTROS DE BÚSQUEDA */}
+      {/* FILTROS DE BUSQUEDA */}
       <div className="card mb-4">
         <div className="card-body">
 
@@ -82,9 +117,7 @@ export const Torneos = ({ onVerDetalle }) => {
 
           <div className="row g-3">
 
-            {/* BUSCADOR */}
             <div className="col-12 col-lg-6">
-
               <label
                 htmlFor="buscarTorneo"
                 className="form-label"
@@ -102,12 +135,9 @@ export const Torneos = ({ onVerDetalle }) => {
                   setBusqueda(evento.target.value)
                 }
               />
-
             </div>
 
-            {/* FILTRAR JUEGO */}
             <div className="col-12 col-md-6 col-lg-3">
-
               <label
                 htmlFor="filtroJuego"
                 className="form-label"
@@ -123,7 +153,6 @@ export const Torneos = ({ onVerDetalle }) => {
                   setJuegoFiltro(evento.target.value)
                 }
               >
-
                 <option value="Todos">
                   Todos los juegos
                 </option>
@@ -133,14 +162,10 @@ export const Torneos = ({ onVerDetalle }) => {
                     {juego}
                   </option>
                 ))}
-
               </select>
-
             </div>
 
-            {/* FILTRAR ESTADO */}
             <div className="col-12 col-md-6 col-lg-3">
-
               <label
                 htmlFor="filtroEstado"
                 className="form-label"
@@ -156,34 +181,25 @@ export const Torneos = ({ onVerDetalle }) => {
                   setEstadoFiltro(evento.target.value)
                 }
               >
-
                 <option value="Todos">
                   Todos los estados
                 </option>
-
                 <option value="Abierto">
                   Abiertos
                 </option>
-
                 <option value="Cerrado">
                   Cerrados
                 </option>
-
                 <option value="En curso">
                   En curso
                 </option>
-
                 <option value="Finalizado">
                   Finalizados
                 </option>
-
               </select>
-
             </div>
 
-            {/* FECHA DESDE */}
             <div className="col-12 col-md-6">
-
               <label
                 htmlFor="fechaDesde"
                 className="form-label"
@@ -200,12 +216,9 @@ export const Torneos = ({ onVerDetalle }) => {
                   setFechaDesde(evento.target.value)
                 }
               />
-
             </div>
 
-            {/* FECHA HASTA */}
             <div className="col-12 col-md-6">
-
               <label
                 htmlFor="fechaHasta"
                 className="form-label"
@@ -222,13 +235,10 @@ export const Torneos = ({ onVerDetalle }) => {
                   setFechaHasta(evento.target.value)
                 }
               />
-
             </div>
 
-            {/* MENSAJE DE FECHAS INVÁLIDAS */}
             {fechasInvalidas && (
               <div className="col-12">
-
                 <div
                   className="alert alert-danger mb-0"
                   role="alert"
@@ -236,13 +246,10 @@ export const Torneos = ({ onVerDetalle }) => {
                   La fecha inicial no puede ser posterior
                   a la fecha final.
                 </div>
-
               </div>
             )}
 
-            {/* LIMPIAR FILTROS */}
             <div className="col-12 text-end">
-
               <button
                 type="button"
                 className="btn btn-outline-secondary"
@@ -250,46 +257,56 @@ export const Torneos = ({ onVerDetalle }) => {
               >
                 Limpiar filtros
               </button>
-
             </div>
 
           </div>
-
         </div>
       </div>
 
+      {/* ESTADO DE CARGA */}
+      {cargando && (
+        <div className="alert alert-info">
+          Cargando torneos...
+        </div>
+      )}
+
+      {/* ERROR DE CONEXION */}
+      {error && (
+        <div className="alert alert-danger">
+          {error}
+        </div>
+      )}
+
       {/* RESULTADOS */}
-      <p className="text-white-50 mb-3">
-        Torneos encontrados: {torneosFiltrados.length}
-      </p>
+      {!cargando && !error && (
+        <>
+          <p className="text-white-50 mb-3">
+            Torneos encontrados: {torneosFiltrados.length}
+          </p>
 
-      <div className="row">
+          <div className="row">
+            {torneosFiltrados.length > 0 ? (
 
-        {torneosFiltrados.length > 0 ? (
+              torneosFiltrados.map((torneo) => (
+                <TarjetaTorneo
+                  key={torneo.id}
+                  torneo={torneo}
+                  onVerDetalle={onVerDetalle}
+                />
+              ))
 
-          torneosFiltrados.map((torneo) => (
-
-            <TarjetaTorneo
-              key={torneo.id}
-              torneo={torneo}
-              onVerDetalle={onVerDetalle}
-            />
-
-          ))
-
-        ) : (
-
-          <div className="col-12">
-
-            <div className="alert alert-secondary text-center">
-              No se encontraron torneos con esos criterios.
-            </div>
-
+            ) : (
+              <div className="col-12">
+                <div className="alert alert-secondary text-center">
+                  {torneos.length === 0
+                    ? 'No hay torneos registrados en el servidor.'
+                    : 'No se encontraron torneos con esos criterios.'}
+                </div>
+              </div>
+            )}
           </div>
-
-        )}
-
-      </div>
+        </>
+      )}
 
     </div>
   )
