@@ -1,7 +1,6 @@
 
-import { obtenerInscritosActuales } from '../logica/contarInscripciones'
+import React from 'react'
 
-// Obtener fecha actual en formato YYYY-MM-DD
 function obtenerFechaActual() {
   const fecha = new Date()
 
@@ -16,17 +15,12 @@ function InicioComplementos({ torneos = [], onVerDetalle }) {
 
   const fechaActual = obtenerFechaActual()
 
-  // Buscar torneos con inscripciones disponibles
   const proximosCierres = torneos
     .filter((torneo) => {
-
-      const inscritos = obtenerInscritosActuales(torneo)
-
       return (
-        torneo.estado === 'Abierto' &&
+        torneo.estado?.toLowerCase() === 'abierto' &&
         torneo.fechaCierre &&
-        torneo.fechaCierre >= fechaActual &&
-        inscritos < torneo.cupos
+        torneo.fechaCierre >= fechaActual
       )
     })
     .sort((a, b) =>
@@ -37,7 +31,7 @@ function InicioComplementos({ torneos = [], onVerDetalle }) {
   return (
     <>
 
-      {/* PRÓXIMOS CIERRES DE INSCRIPCIÓN */}
+      {/* PROXIMOS CIERRES DE INSCRIPCION */}
       <section className="mb-5">
 
         <h2 className="inicio-seccion-titulo mb-2">
@@ -45,15 +39,15 @@ function InicioComplementos({ torneos = [], onVerDetalle }) {
         </h2>
 
         <p className="inicio-seccion-descripcion mb-4">
-          Revisa los torneos que pronto dejarán
-          de recibir participantes.
+          Revisa los torneos abiertos que pronto
+          finalizarán su plazo de inscripción.
         </p>
 
         {proximosCierres.length === 0 ? (
 
           <div className="alert alert-secondary">
-            Actualmente no hay torneos con inscripciones
-            abiertas y cupos disponibles.
+            Actualmente no hay torneos abiertos
+            con próximos cierres de inscripción.
           </div>
 
         ) : (
@@ -75,7 +69,8 @@ function InicioComplementos({ torneos = [], onVerDetalle }) {
                     </h3>
 
                     <p className="text-secondary small">
-                      {torneo.juego}
+                      {torneo.juego ||
+                        `Juego ID ${torneo.juegoId}`}
                     </p>
 
                     <p className="mb-2">
@@ -84,7 +79,7 @@ function InicioComplementos({ torneos = [], onVerDetalle }) {
                     </p>
 
                     <p className="text-secondary small">
-                      Inscripciones disponibles
+                      Estado: {torneo.estado}
                     </p>
 
                     <button
@@ -112,7 +107,7 @@ function InicioComplementos({ torneos = [], onVerDetalle }) {
 
       </section>
 
-      {/* VIDEO DE PRESENTACIÓN */}
+      {/* VIDEO DE PRESENTACION */}
       <section className="mb-5">
 
         <h2 className="inicio-seccion-titulo mb-2">
@@ -133,24 +128,24 @@ function InicioComplementos({ torneos = [], onVerDetalle }) {
             </h3>
 
             {/* REPRODUCTOR DE YOUTUBE */}
-            
-        <div className="ratio ratio-16x9">
-          <iframe
-            src="https://www.youtube.com/embed/0611X-8GTGo"
-            title="Tráiler oficial FNCS Global Championship 2024"
-            loading="lazy"
-            referrerPolicy="strict-origin-when-cross-origin"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            style={{
-              border: 0,
-              borderRadius: '8px'
-            }}
-          />
-        </div>
+            <div className="ratio ratio-16x9">
 
+              <iframe
+                src="https://www.youtube.com/embed/0611X-8GTGo"
+                title="Tráiler oficial FNCS Global Championship 2024"
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                style={{
+                  border: 0,
+                  borderRadius: '8px'
+                }}
+              />
 
-            {/* DESCRIPCIÓN */}
+            </div>
+
+            {/* DESCRIPCION */}
             <p className="text-secondary mt-3 mb-3">
               Transmisión oficial de Fortnite Competitive.
               Se utiliza como referencia del ambiente
@@ -163,7 +158,6 @@ function InicioComplementos({ torneos = [], onVerDetalle }) {
               por eSports Arena Manager.
             </p>
 
-            {/* ENLACE AL VIDEO ORIGINAL */}
             <a
               href="https://www.youtube.com/watch?v=0611X-8GTGo"
               target="_blank"
