@@ -14,19 +14,23 @@ function ResumenEquiposApi() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
-  // Formulario para crear equipos
+  // Formulario
   const [formulario, setFormulario] = useState({
     nombre: '',
     coach: '',
-    juegoId: ''
+    juegoId: '',
+    estado: 'ACTIVO'
   })
 
-  // Mensajes del formulario
+  // Identificador del equipo que estamos editando
+  const [editandoId, setEditandoId] = useState(null)
+
+  // Estados del formulario
   const [guardando, setGuardando] = useState(false)
   const [errorFormulario, setErrorFormulario] = useState('')
   const [mensaje, setMensaje] = useState('')
 
-  // Consultar los microservicios Team y Game
+  // Cargar equipos y videojuegos
   useEffect(() => {
 
     async function cargarDatos() {
@@ -67,8 +71,47 @@ function ResumenEquiposApi() {
     setMensaje('')
   }
 
-  // Crear equipo mediante la API
-  async function crearEquipo(evento) {
+  // Limpiar el formulario
+  function limpiarFormulario() {
+
+    setFormulario({
+      nombre: '',
+      coach: '',
+      juegoId: '',
+      estado: 'ACTIVO'
+    })
+
+    setEditandoId(null)
+  }
+
+  // Seleccionar un equipo para editar
+  function iniciarEdicion(equipo) {
+
+    setEditandoId(equipo.id)
+
+    setFormulario({
+      nombre: equipo.nombre,
+      coach: equipo.coach,
+      juegoId: String(equipo.juegoId),
+      estado: equipo.estado
+    })
+
+    setErrorFormulario('')
+    setMensaje('')
+  }
+
+  // Cancelar la edición
+  function cancelarEdicion() {
+
+    limpiarFormulario()
+
+    setErrorFormulario('')
+    setMensaje('')
+  }
+
+  // Crear o actualizar un equipo
+  async function guardarEquipo(evento) {
+
     evento.preventDefault()
 
     setErrorFormulario('')
@@ -93,7 +136,7 @@ function ResumenEquiposApi() {
       return
     }
 
-    // Validar juego
+    // Validar videojuego
     if (formulario.juegoId === '') {
       setErrorFormulario(
         'Debes seleccionar un videojuego.'
@@ -101,10 +144,12 @@ function ResumenEquiposApi() {
       return
     }
 
-    // Evitar nombres repetidos
+    // Evitar nombres duplicados
     const nombreRepetido = equipos.some(
       (equipo) =>
-        equipo.nombre.toLowerCase() === nombre.toLowerCase()
+        equipo.nombre.toLowerCase() ===
+          nombre.toLowerCase() &&
+        Number(equipo.id) !== Number(editandoId)
     )
 
     if (nombreRepetido) {
@@ -114,39 +159,55 @@ function ResumenEquiposApi() {
       return
     }
 
+    // Datos que recibe Team
+    const datosEquipo = {
+      nombre: nombre,
+      coach: coach,
+      juegoId: Number(formulario.juegoId),
+      estado: formulario.estado
+    }
+
     try {
       setGuardando(true)
 
-      // Guardar equipo en Team
-      const nuevoEquipo = await equiposService.crear({
-        nombre: nombre,
-        coach: coach,
-        juegoId: Number(formulario.juegoId),
-        estado: 'ACTIVO'
-      })
+      if (editandoId !== null) {
 
-      // Actualizar el listado desde el servidor
+        // Actualizar equipo existente
+        await equiposService.actualizar(
+          editandoId,
+          datosEquipo
+        )
+
+        setMensaje(
+          `Equipo "${nombre}" actualizado correctamente.`
+        )
+
+      } else {
+
+        // Crear nuevo equipo
+        await equiposService.crear(datosEquipo)
+
+        setMensaje(
+          `Equipo "${nombre}" creado correctamente ` +
+          'en el servidor.'
+        )
+      }
+
+      // Consultar nuevamente los equipos
       const datosActualizados =
         await equiposService.listar()
 
       setEquipos(datosActualizados)
 
-      // Limpiar formulario
-      setFormulario({
-        nombre: '',
-        coach: '',
-        juegoId: ''
-      })
-
-      setMensaje(
-        `Equipo "${nuevoEquipo.nombre}" creado ` +
-        'correctamente en el servidor.'
-      )
+      // Limpiar después de guardar
+      limpiarFormulario()
 
     } catch (err) {
+
       setErrorFormulario(err.message)
 
     } finally {
+
       setGuardando(false)
     }
   }
@@ -165,7 +226,7 @@ function ResumenEquiposApi() {
           mediante Gateway.
         </p>
 
-        {/* CARGANDO */}
+        {/* ESTADO DE CARGA */}
         {cargando && (
           <div className="alert alert-info">
             Cargando equipos del servidor...
@@ -182,7 +243,7 @@ function ResumenEquiposApi() {
         {!cargando && !error && (
           <>
 
-            {/* CONTADOR DE EQUIPOS */}
+            {/* CONTADOR */}
             <div className="border rounded-3 p-3 mb-4">
 
               <p className="mb-1">
@@ -195,23 +256,32 @@ function ResumenEquiposApi() {
 
             </div>
 
-            {/* FORMULARIO DE CREACION */}
-            <div className="border border-secondary rounded-3 p-4 mb-4 bg-body-tertiary">
+            {/* FORMULARIO */}
+            <div
+              className="border border-secondary rounded-3 p-4 mb-4 bg-body-tertiary"
+            >
 
               <h4 className="h5 mb-2 text-dark">
-                Crear equipo con API (EP3)
+
+                {editandoId !== null
+                  ? `Editar equipo N° ${editandoId}`
+                  : 'Crear equipo con API (EP3)'}
+
               </h4>
 
               <p className="text-secondary mb-4">
-                Completa los datos para registrar
-                un equipo en el servidor.
+
+                {editandoId !== null
+                  ? 'Modifica los datos del equipo y guarda los cambios.'
+                  : 'Completa los datos para registrar un equipo en el servidor.'}
+
               </p>
 
-              <form onSubmit={crearEquipo} noValidate>
+              <form onSubmit={guardarEquipo} noValidate>
 
                 <div className="row g-4 text-start">
 
-                  {/* NOMBRE DEL EQUIPO */}
+                  {/* NOMBRE */}
                   <div className="col-12 col-md-4">
 
                     <label
@@ -305,9 +375,44 @@ function ResumenEquiposApi() {
 
                   </div>
 
+                  {/* ESTADO: SOLO DURANTE EDICION */}
+                  {editandoId !== null && (
+
+                    <div className="col-12 col-md-4">
+
+                      <label
+                        htmlFor="estadoEquipoApi"
+                        className="form-label fw-semibold d-block text-start text-dark"
+                      >
+                        Estado del equipo
+                      </label>
+
+                      <select
+                        id="estadoEquipoApi"
+                        name="estado"
+                        className="form-select form-select-lg bg-white border border-2 border-secondary text-dark"
+                        value={formulario.estado}
+                        onChange={cambiarCampo}
+                        disabled={guardando}
+                      >
+
+                        <option value="ACTIVO">
+                          ACTIVO
+                        </option>
+
+                        <option value="INACTIVO">
+                          INACTIVO
+                        </option>
+
+                      </select>
+
+                    </div>
+
+                  )}
+
                 </div>
 
-                {/* MENSAJE DE ERROR */}
+                {/* MENSAJES */}
                 {errorFormulario && (
                   <div
                     className="alert alert-danger mt-4"
@@ -317,7 +422,6 @@ function ResumenEquiposApi() {
                   </div>
                 )}
 
-                {/* MENSAJE DE CONFIRMACION */}
                 {mensaje && (
                   <div
                     className="alert alert-success mt-4"
@@ -327,18 +431,35 @@ function ResumenEquiposApi() {
                   </div>
                 )}
 
-                {/* BOTON CREAR */}
-                <div className="text-center mt-4">
+                {/* BOTONES */}
+                <div className="d-flex justify-content-center gap-2 mt-4">
 
                   <button
                     type="submit"
                     className="btn btn-primary px-4 py-2"
                     disabled={guardando}
                   >
+
                     {guardando
-                      ? 'Guardando equipo...'
-                      : 'Crear equipo en el servidor'}
+                      ? 'Guardando...'
+                      : editandoId !== null
+                        ? 'Guardar cambios'
+                        : 'Crear equipo en el servidor'}
+
                   </button>
+
+                  {editandoId !== null && (
+
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={cancelarEdicion}
+                      disabled={guardando}
+                    >
+                      Cancelar edición
+                    </button>
+
+                  )}
 
                 </div>
 
@@ -346,7 +467,7 @@ function ResumenEquiposApi() {
 
             </div>
 
-            {/* LISTADO DE EQUIPOS */}
+            {/* LISTADO */}
             <h4 className="h5 mb-3">
               Listado de equipos del servidor
             </h4>
@@ -370,6 +491,7 @@ function ResumenEquiposApi() {
                       <th>Coach</th>
                       <th>Juego</th>
                       <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
 
@@ -377,7 +499,6 @@ function ResumenEquiposApi() {
 
                     {equipos.map((equipo) => {
 
-                      // Buscar el videojuego del equipo
                       const juego = juegos.find(
                         (item) =>
                           Number(item.id) ===
@@ -387,17 +508,11 @@ function ResumenEquiposApi() {
                       return (
                         <tr key={equipo.id}>
 
-                          <td>
-                            {equipo.id}
-                          </td>
+                          <td>{equipo.id}</td>
 
-                          <td>
-                            {equipo.nombre}
-                          </td>
+                          <td>{equipo.nombre}</td>
 
-                          <td>
-                            {equipo.coach}
-                          </td>
+                          <td>{equipo.coach}</td>
 
                           <td>
                             {juego
@@ -405,8 +520,17 @@ function ResumenEquiposApi() {
                               : `Juego ID ${equipo.juegoId}`}
                           </td>
 
+                          <td>{equipo.estado}</td>
+
                           <td>
-                            {equipo.estado}
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={() => iniciarEdicion(equipo)}
+                              disabled={guardando}
+                            >
+                              Editar
+                            </button>
                           </td>
 
                         </tr>
