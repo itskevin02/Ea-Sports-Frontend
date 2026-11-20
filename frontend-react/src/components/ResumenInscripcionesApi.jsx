@@ -5,7 +5,7 @@ import { torneosService } from '../services/torneos'
 import { equiposService } from '../services/equipos'
 import { inscripcionesService } from '../services/inscripciones'
 
-// Obtener la fecha de hoy
+// Obtener la fecha actual
 function obtenerFechaActual() {
   const fecha = new Date()
   const anio = fecha.getFullYear()
@@ -17,22 +17,28 @@ function obtenerFechaActual() {
 
 function ResumenInscripcionesApi() {
 
+  // Datos del servidor
   const [torneos, setTorneos] = useState([])
   const [equipos, setEquipos] = useState([])
   const [inscripciones, setInscripciones] = useState([])
 
+  // Estados de carga
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
-  // Datos del nuevo formulario
+  // Datos del formulario
   const [torneoId, setTorneoId] = useState('')
   const [equipoId, setEquipoId] = useState('')
 
+  // Estados para guardar y eliminar
   const [guardando, setGuardando] = useState(false)
+  const [eliminandoId, setEliminandoId] = useState(null)
+
+  // Mensajes
   const [errorFormulario, setErrorFormulario] = useState('')
   const [mensaje, setMensaje] = useState('')
 
-  // Cargar los registros del servidor
+  // Cargar los datos de los microservicios
   useEffect(() => {
 
     async function cargarDatos() {
@@ -67,7 +73,7 @@ function ResumenInscripcionesApi() {
     (torneo) => String(torneo.id) === torneoId
   )
 
-  // Mostrar solamente equipos del mismo videojuego
+  // Mostrar equipos del mismo videojuego
   const equiposDelJuego = torneoSeleccionado
     ? equipos.filter(
         (equipo) =>
@@ -79,10 +85,10 @@ function ResumenInscripcionesApi() {
   // Contar inscripciones del torneo
   const inscritos = inscripciones.filter(
     (inscripcion) =>
-      Number(inscripcion.torneoId) ===
-      Number(torneoId)
+      Number(inscripcion.torneoId) === Number(torneoId)
   ).length
 
+  // Calcular cupos disponibles
   const cuposDisponibles = torneoSeleccionado
     ? Math.max(
         0,
@@ -90,7 +96,7 @@ function ResumenInscripcionesApi() {
       )
     : 0
 
-  // Crear inscripción mediante Registration
+  // CREAR INSCRIPCION
   async function confirmarInscripcion(evento) {
     evento.preventDefault()
 
@@ -105,7 +111,7 @@ function ResumenInscripcionesApi() {
       (item) => String(item.id) === equipoId
     )
 
-    // Validaciones antes de enviar
+    // Validar torneo y equipo
     if (!torneo || !equipo) {
       setErrorFormulario(
         'Selecciona un torneo y un equipo.'
@@ -113,7 +119,10 @@ function ResumenInscripcionesApi() {
       return
     }
 
-    const estadoTorneo = torneo.estado.toLowerCase()
+    // Validar estado del torneo
+    const estadoTorneo = String(
+      torneo.estado || ''
+    ).toLowerCase()
 
     if (estadoTorneo !== 'abierto' &&
         estadoTorneo !== 'activo') {
@@ -123,6 +132,7 @@ function ResumenInscripcionesApi() {
       return
     }
 
+    // Validar fecha de cierre
     if (torneo.fechaCierre < obtenerFechaActual()) {
       setErrorFormulario(
         'El plazo de inscripción ya terminó.'
@@ -130,13 +140,23 @@ function ResumenInscripcionesApi() {
       return
     }
 
-    if (equipo.estado.toUpperCase() !== 'ACTIVO') {
+    // Validar estado del equipo
+    if (String(equipo.estado).toUpperCase() !== 'ACTIVO') {
       setErrorFormulario(
         'El equipo seleccionado no está activo.'
       )
       return
     }
 
+    // Validar videojuego
+    if (Number(equipo.juegoId) !== Number(torneo.juegoId)) {
+      setErrorFormulario(
+        'El equipo no corresponde al juego del torneo.'
+      )
+      return
+    }
+
+    // Validar cupos
     if (cuposDisponibles <= 0) {
       setErrorFormulario(
         'El torneo ya no tiene cupos disponibles.'
@@ -144,6 +164,7 @@ function ResumenInscripcionesApi() {
       return
     }
 
+    // Evitar inscripciones duplicadas
     const repetido = inscripciones.some(
       (registro) =>
         Number(registro.torneoId) === Number(torneoId) &&
@@ -160,7 +181,7 @@ function ResumenInscripcionesApi() {
     try {
       setGuardando(true)
 
-      // Enviar los datos al microservicio Registration
+      // Crear inscripción mediante Registration
       const nuevaInscripcion =
         await inscripcionesService.crear({
           torneoId: Number(torneoId),
@@ -168,7 +189,7 @@ function ResumenInscripcionesApi() {
           estado: 'ACTIVO'
         })
 
-      // Actualizar el listado desde el servidor
+      // Actualizar datos desde el servidor
       const datosActualizados =
         await inscripcionesService.listar()
 
@@ -179,6 +200,7 @@ function ResumenInscripcionesApi() {
         'registrada correctamente en el servidor.'
       )
 
+      // Limpiar equipo seleccionado
       setEquipoId('')
 
     } catch (err) {
@@ -186,6 +208,45 @@ function ResumenInscripcionesApi() {
 
     } finally {
       setGuardando(false)
+    }
+  }
+
+  // CANCELAR INSCRIPCION
+  async function cancelarInscripcion(inscripcion) {
+
+    // Solicitar confirmación
+    const confirmar = window.confirm(
+      `¿Deseas cancelar la inscripción N° ${inscripcion.id}?`
+    )
+
+    if (!confirmar) {
+      return
+    }
+
+    setErrorFormulario('')
+    setMensaje('')
+
+    try {
+      setEliminandoId(inscripcion.id)
+
+      // Eliminar inscripción desde Registration
+      await inscripcionesService.eliminar(inscripcion.id)
+
+      // Actualizar la lista desde el servidor
+      const datosActualizados =
+        await inscripcionesService.listar()
+
+      setInscripciones(datosActualizados)
+
+      setMensaje(
+        `Inscripción N° ${inscripcion.id} cancelada correctamente.`
+      )
+
+    } catch (err) {
+      setErrorFormulario(err.message)
+
+    } finally {
+      setEliminandoId(null)
     }
   }
 
@@ -203,12 +264,14 @@ function ResumenInscripcionesApi() {
           y Registration mediante Gateway.
         </p>
 
+        {/* CARGANDO */}
         {cargando && (
           <div className="alert alert-info">
             Cargando inscripciones del servidor...
           </div>
         )}
 
+        {/* ERROR DE CONEXION */}
         {error && (
           <div className="alert alert-danger">
             {error}
@@ -223,28 +286,49 @@ function ResumenInscripcionesApi() {
 
               <div className="col-12 col-md-4">
                 <div className="border rounded p-3">
-                  <p className="mb-1">Torneos</p>
-                  <h4>{torneos.length}</h4>
+
+                  <p className="mb-1">
+                    Torneos
+                  </p>
+
+                  <h4 className="mb-0">
+                    {torneos.length}
+                  </h4>
+
                 </div>
               </div>
 
               <div className="col-12 col-md-4">
                 <div className="border rounded p-3">
-                  <p className="mb-1">Equipos</p>
-                  <h4>{equipos.length}</h4>
+
+                  <p className="mb-1">
+                    Equipos
+                  </p>
+
+                  <h4 className="mb-0">
+                    {equipos.length}
+                  </h4>
+
                 </div>
               </div>
 
               <div className="col-12 col-md-4">
                 <div className="border rounded p-3">
-                  <p className="mb-1">Inscripciones</p>
-                  <h4>{inscripciones.length}</h4>
+
+                  <p className="mb-1">
+                    Inscripciones
+                  </p>
+
+                  <h4 className="mb-0">
+                    {inscripciones.length}
+                  </h4>
+
                 </div>
               </div>
 
             </div>
 
-            {/* FORMULARIO REAL */}
+            {/* FORMULARIO EP3 */}
             <div className="border rounded p-3 mb-4">
 
               <h4 className="h5 mb-3">
@@ -255,6 +339,7 @@ function ResumenInscripcionesApi() {
 
                 <div className="row g-3">
 
+                  {/* SELECCIONAR TORNEO */}
                   <div className="col-12 col-md-6">
 
                     <label
@@ -274,8 +359,9 @@ function ResumenInscripcionesApi() {
                         setErrorFormulario('')
                         setMensaje('')
                       }}
-                      disabled={guardando}
+                      disabled={guardando || eliminandoId !== null}
                     >
+
                       <option value="">
                         Selecciona un torneo
                       </option>
@@ -293,6 +379,7 @@ function ResumenInscripcionesApi() {
 
                   </div>
 
+                  {/* SELECCIONAR EQUIPO */}
                   <div className="col-12 col-md-6">
 
                     <label
@@ -311,8 +398,13 @@ function ResumenInscripcionesApi() {
                         setErrorFormulario('')
                         setMensaje('')
                       }}
-                      disabled={!torneoSeleccionado || guardando}
+                      disabled={
+                        !torneoSeleccionado ||
+                        guardando ||
+                        eliminandoId !== null
+                      }
                     >
+
                       <option value="">
                         Selecciona un equipo
                       </option>
@@ -332,36 +424,50 @@ function ResumenInscripcionesApi() {
 
                 </div>
 
+                {/* CUPOS */}
                 {torneoSeleccionado && (
                   <p className="text-secondary mt-3 mb-0">
                     Cupos disponibles: {cuposDisponibles}
                   </p>
                 )}
 
+                {/* SIN EQUIPOS DISPONIBLES */}
                 {torneoSeleccionado &&
                   equiposDelJuego.length === 0 && (
                     <div className="alert alert-warning mt-3">
-                      No hay equipos registrados
-                      para este videojuego.
+                      No hay equipos registrados para
+                      este videojuego.
                     </div>
                   )}
 
+                {/* ERROR DEL FORMULARIO */}
                 {errorFormulario && (
-                  <div className="alert alert-danger mt-3">
+                  <div
+                    className="alert alert-danger mt-3"
+                    role="alert"
+                  >
                     {errorFormulario}
                   </div>
                 )}
 
+                {/* MENSAJE DE CONFIRMACION */}
                 {mensaje && (
-                  <div className="alert alert-success mt-3">
+                  <div
+                    className="alert alert-success mt-3"
+                    role="status"
+                  >
                     {mensaje}
                   </div>
                 )}
 
+                {/* BOTON INSCRIBIR */}
                 <button
                   type="submit"
                   className="btn btn-primary mt-3"
-                  disabled={guardando}
+                  disabled={
+                    guardando ||
+                    eliminandoId !== null
+                  }
                 >
                   {guardando
                     ? 'Guardando inscripción...'
@@ -372,7 +478,7 @@ function ResumenInscripcionesApi() {
 
             </div>
 
-            {/* TABLA DE INSCRIPCIONES */}
+            {/* LISTADO */}
             <h4 className="h5 mb-3">
               Listado de inscripciones del servidor
             </h4>
@@ -396,6 +502,7 @@ function ResumenInscripcionesApi() {
                       <th>Torneo</th>
                       <th>Equipo</th>
                       <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
 
@@ -403,12 +510,14 @@ function ResumenInscripcionesApi() {
 
                     {inscripciones.map((inscripcion) => {
 
+                      // Buscar nombre del torneo
                       const torneo = torneos.find(
                         (item) =>
                           Number(item.id) ===
                           Number(inscripcion.torneoId)
                       )
 
+                      // Buscar nombre del equipo
                       const equipo = equipos.find(
                         (item) =>
                           Number(item.id) ===
@@ -418,7 +527,9 @@ function ResumenInscripcionesApi() {
                       return (
                         <tr key={inscripcion.id}>
 
-                          <td>{inscripcion.id}</td>
+                          <td>
+                            {inscripcion.id}
+                          </td>
 
                           <td>
                             {torneo
@@ -432,7 +543,30 @@ function ResumenInscripcionesApi() {
                               : `Equipo ID ${inscripcion.equipoId}`}
                           </td>
 
-                          <td>{inscripcion.estado}</td>
+                          <td>
+                            {inscripcion.estado}
+                          </td>
+
+                          {/* BOTON CANCELAR */}
+                          <td>
+
+                            <button
+                              type="button"
+                              className="btn btn-outline-danger btn-sm"
+                              onClick={() =>
+                                cancelarInscripcion(inscripcion)
+                              }
+                              disabled={
+                                guardando ||
+                                eliminandoId !== null
+                              }
+                            >
+                              {eliminandoId === inscripcion.id
+                                ? 'Cancelando...'
+                                : 'Cancelar'}
+                            </button>
+
+                          </td>
 
                         </tr>
                       )
