@@ -3,10 +3,7 @@ import { useState, useEffect } from 'react'
 
 import { torneosData } from '../data/torneos'
 
-import {
-  cuposDisponibles as calcularCuposDisponibles,
-  inscripcionFueraDePlazo,
-  equipoCompleto
+import {cuposDisponibles as calcularCuposDisponibles,inscripcionFueraDePlazo,equipoCompleto
 } from '../logica/validarInscripcion'
 
 import {
@@ -19,6 +16,7 @@ import {
 } from '../logica/eliminarInscripcion'
 
 import FormularioInscripcion from '../components/FormularioInscripcion'
+import ResumenInscripcionesApi from '../components/ResumenInscripcionesApi'
 
 // Jugadores de ejemplo cuando todavía no hay perfiles
 const jugadoresEjemplo = [
@@ -445,12 +443,15 @@ function Inscripcion() {
       <p className="text-white-50 mb-4">
         Selecciona un torneo e inscribe a un jugador o equipo.
       </p>
+      {/* INSCRIPCIONES DEL SERVIDOR - EP3 */}
+    <ResumenInscripcionesApi />
 
       <div className="alert alert-info">
-        Las inscripciones se guardan en este navegador.
-        Los torneos se obtienen del catálogo compartido
-        de eSports Arena Manager.
-      </div>
+      Este formulario corresponde a la versión EP2
+      y todavía guarda datos en este navegador.
+      La sección anterior consulta el servidor real.
+      Próximamente conectaremos este formulario a la API.
+    </div>
 
       {/* FORMULARIO */}
       <div className="card mb-4">
