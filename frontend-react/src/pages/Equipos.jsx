@@ -1,9 +1,6 @@
-﻿
-import { useState, useEffect } from 'react'
-
-import {
-  eliminarEquipoYInscripciones
-} from '../logica/eliminarEquipo'
+﻿import { useState, useEffect } from 'react'
+import {eliminarEquipoYInscripciones} from '../logica/eliminarEquipo'
+import ResumenEquiposApi from '../components/ResumenEquiposApi'
 
 // Juegos disponibles
 const juegos = [
@@ -440,6 +437,13 @@ function Equipos() {
       <p className="text-white-50 mb-4">
         Crea equipos y administra sus integrantes.
       </p>
+          {/* EQUIPOS DEL SERVIDOR - EP3 */}
+    <ResumenEquiposApi />
+    <div className="alert alert-info">
+  La sección anterior muestra los equipos reales
+  del servidor. Los formularios siguientes todavía
+  pertenecen a la EP2 y utilizan datos del navegador.
+</div>
 
       {datosJugadores.sonEjemplo && (
         <div className="alert alert-info">
