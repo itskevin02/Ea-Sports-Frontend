@@ -1,6 +1,7 @@
 ﻿
 import { useState, useEffect } from 'react'
 import { torneosService } from '../services/torneos'
+import { juegosService } from '../services/juegos'
 import { TarjetaTorneo } from '../components/TarjetaTorneo'
 
 function nombreJuego(torneo) {
@@ -20,6 +21,7 @@ export const Torneos = ({ onVerDetalle }) => {
   const [torneos, setTorneos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [avisoJuegos, setAvisoJuegos] = useState('')
 
   const [busqueda, setBusqueda] = useState('')
   const [juegoFiltro, setJuegoFiltro] = useState('Todos')
@@ -33,9 +35,35 @@ export const Torneos = ({ onVerDetalle }) => {
       try {
         setCargando(true)
         setError('')
+        setAvisoJuegos('')
 
-        const datos = await torneosService.listar()
-        setTorneos(datos)
+        const datosTorneos = await torneosService.listar()
+
+        let datosJuegos = []
+
+        try {
+          datosJuegos = await juegosService.listar()
+        } catch {
+          setAvisoJuegos(
+            'No se pudieron cargar los nombres de los juegos.'
+          )
+        }
+
+        const torneosCompletos = datosTorneos.map((torneo) => {
+
+          const juegoEncontrado = datosJuegos.find(
+            (juego) => juego.id === torneo.juegoId
+          )
+
+          return {
+            ...torneo,
+            juego: juegoEncontrado
+              ? juegoEncontrado.nombre
+              : null
+          }
+        })
+
+        setTorneos(torneosCompletos)
 
       } catch (err) {
         setError(err.message)
@@ -274,6 +302,13 @@ export const Torneos = ({ onVerDetalle }) => {
       {error && (
         <div className="alert alert-danger">
           {error}
+        </div>
+      )}
+
+      {/* AVISO SI GAME NO RESPONDE */}
+      {avisoJuegos && !error && (
+        <div className="alert alert-warning">
+          {avisoJuegos} Se mostrarán sus identificadores.
         </div>
       )}
 

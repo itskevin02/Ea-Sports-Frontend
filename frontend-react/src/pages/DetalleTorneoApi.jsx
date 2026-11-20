@@ -1,12 +1,15 @@
 
 import { useState, useEffect } from 'react'
 import { torneosService } from '../services/torneos'
+import { juegosService } from '../services/juegos'
 
 function DetalleTorneoApi({ torneoId, onVolver }) {
 
   const [torneo, setTorneo] = useState(null)
+  const [nombreJuego, setNombreJuego] = useState('')
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [avisoJuego, setAvisoJuego] = useState('')
 
   useEffect(() => {
 
@@ -14,9 +17,31 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
       try {
         setCargando(true)
         setError('')
+        setAvisoJuego('')
 
         const datos = await torneosService.obtener(torneoId)
+
+        if (!datos) {
+          throw new Error('No se encontró el torneo.')
+        }
+
         setTorneo(datos)
+
+        if (datos.juegoId) {
+          try {
+            const juego = await juegosService.obtener(datos.juegoId)
+            setNombreJuego(juego.nombre)
+
+          } catch {
+            setNombreJuego(`ID ${datos.juegoId}`)
+            setAvisoJuego(
+              'No se pudo obtener el nombre del videojuego.'
+            )
+          }
+
+        } else {
+          setNombreJuego('No especificado')
+        }
 
       } catch (err) {
         setError(err.message)
@@ -46,6 +71,7 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
         </div>
 
         <button
+          type="button"
           className="btn btn-outline-primary"
           onClick={onVolver}
         >
@@ -61,6 +87,12 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
       <h2 className="h4 mb-4">
         Detalle del Torneo
       </h2>
+
+      {avisoJuego && (
+        <div className="alert alert-warning">
+          {avisoJuego}
+        </div>
+      )}
 
       <div className="card">
         <div className="card-body">
@@ -86,7 +118,7 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
           </p>
 
           <p>
-            <strong>Juego asociado:</strong> ID {torneo.juegoId}
+            <strong>Juego asociado:</strong> {nombreJuego}
           </p>
 
           <p>
