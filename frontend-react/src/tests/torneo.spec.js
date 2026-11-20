@@ -1,5 +1,4 @@
-﻿
-import React from 'react'
+﻿import React from 'react'
 
 import {
   render,
@@ -10,6 +9,7 @@ import {
 
 import { TarjetaTorneo } from '../components/TarjetaTorneo'
 import { Torneos } from '../pages/Torneos'
+import DetalleTorneoApi from '../pages/DetalleTorneoApi'
 
 const torneosPrueba = [
   {
@@ -40,6 +40,17 @@ const torneosPrueba = [
   }
 ]
 
+const juegosPrueba = [
+  {
+    id: 1,
+    nombre: 'EA Sports FC 26'
+  },
+  {
+    id: 2,
+    nombre: 'Rocket League'
+  }
+]
+
 function respuestaApi(datos) {
   return {
     ok: true,
@@ -48,30 +59,86 @@ function respuestaApi(datos) {
   }
 }
 
+function respuestaError(mensaje) {
+  return {
+    ok: false,
+    status: 404,
+    json: () => Promise.resolve({ mensaje })
+  }
+}
+
+function simularPeticion(
+  url,
+  torneos = torneosPrueba,
+  juegos = juegosPrueba
+) {
+
+  if (url.endsWith('/tournaments')) {
+    return Promise.resolve(respuestaApi(torneos))
+  }
+
+  if (url.endsWith('/games')) {
+    return Promise.resolve(respuestaApi(juegos))
+  }
+
+  if (url.includes('/tournaments/')) {
+
+    const id = Number(url.split('/').pop())
+    const torneo = torneos.find((t) => t.id === id)
+
+    return Promise.resolve(
+      torneo
+        ? respuestaApi(torneo)
+        : respuestaError('No se encontró el torneo.')
+    )
+  }
+
+  if (url.includes('/games/')) {
+
+    const id = Number(url.split('/').pop())
+    const juego = juegos.find((j) => j.id === id)
+
+    return Promise.resolve(
+      juego
+        ? respuestaApi(juego)
+        : respuestaError('No se encontró el videojuego.')
+    )
+  }
+
+  return Promise.reject(
+    new Error('Ruta no simulada en la prueba')
+  )
+}
+
 describe('Pruebas de Torneos EP3', () => {
 
   beforeEach(() => {
-    spyOn(window, 'fetch').and.returnValue(
-      Promise.resolve(respuestaApi(torneosPrueba))
+
+    spyOn(window, 'fetch').and.callFake((url) =>
+      simularPeticion(url)
     )
+
   })
 
   afterEach(() => {
     cleanup()
   })
 
-  it('01. Muestra los datos de un torneo del backend', () => {
+  it('01. Muestra el nombre real del videojuego', () => {
 
-    render(
-      <TarjetaTorneo torneo={torneosPrueba[0]} />
-    )
+    const torneo = {
+      ...torneosPrueba[0],
+      juego: 'EA Sports FC 26'
+    }
+
+    render(<TarjetaTorneo torneo={torneo} />)
 
     expect(
       screen.getByText('Torneo de Prueba EP3')
     ).not.toBeNull()
 
     expect(
-      screen.getByText('Juego: ID 1')
+      screen.getByText('Juego: EA Sports FC 26')
     ).not.toBeNull()
 
     expect(
@@ -80,11 +147,11 @@ describe('Pruebas de Torneos EP3', () => {
 
   })
 
-  it('02. Carga torneos desde la API REST', async () => {
+  it('02. Carga torneos y juegos desde la API', async () => {
 
     render(<Torneos />)
 
-    await screen.findByText('Torneo de Prueba EP3')
+    await screen.findByText('Juego: EA Sports FC 26')
 
     expect(
       screen.getByText('Liga de Prueba EP3')
@@ -146,7 +213,7 @@ describe('Pruebas de Torneos EP3', () => {
 
   })
 
-  it('05. Filtra torneos por juego', async () => {
+  it('05. Filtra por nombre real del juego', async () => {
 
     render(<Torneos />)
 
@@ -157,7 +224,7 @@ describe('Pruebas de Torneos EP3', () => {
     )
 
     fireEvent.change(selector, {
-      target: { value: 'Juego ID 2' }
+      target: { value: 'Rocket League' }
     })
 
     expect(
@@ -220,10 +287,10 @@ describe('Pruebas de Torneos EP3', () => {
 
   })
 
-  it('08. Muestra el mensaje cuando no hay torneos', async () => {
+  it('08. Muestra un mensaje si no hay torneos', async () => {
 
-    window.fetch.and.returnValue(
-      Promise.resolve(respuestaApi([]))
+    window.fetch.and.callFake((url) =>
+      simularPeticion(url, [], juegosPrueba)
     )
 
     render(<Torneos />)
@@ -236,11 +303,18 @@ describe('Pruebas de Torneos EP3', () => {
 
   })
 
-  it('09. Muestra un error si falla la conexion', async () => {
+  it('09. Muestra error si falla Tournament', async () => {
 
-    window.fetch.and.returnValue(
-      Promise.reject(new Error('Error de prueba'))
-    )
+    window.fetch.and.callFake((url) => {
+
+      if (url.endsWith('/tournaments')) {
+        return Promise.reject(
+          new Error('Servidor apagado')
+        )
+      }
+
+      return simularPeticion(url)
+    })
 
     render(<Torneos />)
 
@@ -252,9 +326,11 @@ describe('Pruebas de Torneos EP3', () => {
 
   })
 
-  it('10. Ejecuta la funcion al presionar Ver Detalle', () => {
+  it('10. Ejecuta la funcion Ver Detalle', () => {
 
-    const funcionDetalle = jasmine.createSpy('funcionDetalle')
+    const funcionDetalle = jasmine.createSpy(
+      'funcionDetalle'
+    )
 
     render(
       <TarjetaTorneo
@@ -272,6 +348,71 @@ describe('Pruebas de Torneos EP3', () => {
     expect(funcionDetalle).toHaveBeenCalledWith(
       torneosPrueba[0]
     )
+
+  })
+
+  it('11. El detalle obtiene el nombre del juego', async () => {
+
+    render(
+      <DetalleTorneoApi
+        torneoId={1}
+        onVolver={() => {}}
+      />
+    )
+
+    expect(
+      await screen.findByText('Torneo de Prueba EP3')
+    ).not.toBeNull()
+
+    expect(
+      screen.getByText(/EA Sports FC 26/)
+    ).not.toBeNull()
+
+  })
+
+  it('12. Muestra error si el torneo no existe', async () => {
+
+    render(
+      <DetalleTorneoApi
+        torneoId={999}
+        onVolver={() => {}}
+      />
+    )
+
+    expect(
+      await screen.findByText(
+        'No se encontró el torneo.'
+      )
+    ).not.toBeNull()
+
+  })
+
+  it('13. Mantiene torneos visibles si Game falla', async () => {
+
+    window.fetch.and.callFake((url) => {
+
+      if (url.endsWith('/games')) {
+        return Promise.reject(
+          new Error('Game no disponible')
+        )
+      }
+
+      return simularPeticion(url)
+    })
+
+    render(<Torneos />)
+
+    await screen.findByText('Torneo de Prueba EP3')
+
+    expect(
+      screen.getByText('Juego: ID 1')
+    ).not.toBeNull()
+
+    expect(
+      screen.getByText(
+        /No se pudieron cargar los nombres de los juegos/
+      )
+    ).not.toBeNull()
 
   })
 
