@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 
 import { equiposService } from '../services/equipos'
 import { juegosService } from '../services/juegos'
+import { inscripcionesService } from '../services/inscripciones'
 
 function ResumenEquiposApi() {
 
@@ -14,7 +15,7 @@ function ResumenEquiposApi() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
-  // Formulario
+  // Datos del formulario
   const [formulario, setFormulario] = useState({
     nombre: '',
     coach: '',
@@ -22,15 +23,16 @@ function ResumenEquiposApi() {
     estado: 'ACTIVO'
   })
 
-  // Identificador del equipo que estamos editando
+  // Estados para crear, editar y eliminar
   const [editandoId, setEditandoId] = useState(null)
-
-  // Estados del formulario
   const [guardando, setGuardando] = useState(false)
-  const [errorFormulario, setErrorFormulario] = useState('')
-  const [mensaje, setMensaje] = useState('')
+  const [eliminandoId, setEliminandoId] = useState(null)
 
-  // Cargar equipos y videojuegos
+  // Mensajes
+  const [mensaje, setMensaje] = useState('')
+  const [errorFormulario, setErrorFormulario] = useState('')
+
+  // Cargar los equipos y juegos desde Gateway
   useEffect(() => {
 
     async function cargarDatos() {
@@ -57,7 +59,7 @@ function ResumenEquiposApi() {
 
   }, [])
 
-  // Actualizar campos del formulario
+  // Cambiar los campos del formulario
   function cambiarCampo(evento) {
 
     const { name, value } = evento.target
@@ -84,7 +86,7 @@ function ResumenEquiposApi() {
     setEditandoId(null)
   }
 
-  // Seleccionar un equipo para editar
+  // Seleccionar equipo para editar
   function iniciarEdicion(equipo) {
 
     setEditandoId(equipo.id)
@@ -104,12 +106,11 @@ function ResumenEquiposApi() {
   function cancelarEdicion() {
 
     limpiarFormulario()
-
     setErrorFormulario('')
     setMensaje('')
   }
 
-  // Crear o actualizar un equipo
+  // Crear o editar equipo
   async function guardarEquipo(evento) {
 
     evento.preventDefault()
@@ -144,11 +145,10 @@ function ResumenEquiposApi() {
       return
     }
 
-    // Evitar nombres duplicados
+    // Evitar nombres repetidos
     const nombreRepetido = equipos.some(
       (equipo) =>
-        equipo.nombre.toLowerCase() ===
-          nombre.toLowerCase() &&
+        equipo.nombre.toLowerCase() === nombre.toLowerCase() &&
         Number(equipo.id) !== Number(editandoId)
     )
 
@@ -159,7 +159,7 @@ function ResumenEquiposApi() {
       return
     }
 
-    // Datos que recibe Team
+    // Preparar los datos para Team
     const datosEquipo = {
       nombre: nombre,
       coach: coach,
@@ -172,7 +172,7 @@ function ResumenEquiposApi() {
 
       if (editandoId !== null) {
 
-        // Actualizar equipo existente
+        // Actualizar equipo
         await equiposService.actualizar(
           editandoId,
           datosEquipo
@@ -184,31 +184,88 @@ function ResumenEquiposApi() {
 
       } else {
 
-        // Crear nuevo equipo
+        // Crear equipo
         await equiposService.crear(datosEquipo)
 
         setMensaje(
-          `Equipo "${nombre}" creado correctamente ` +
-          'en el servidor.'
+          `Equipo "${nombre}" creado correctamente en el servidor.`
         )
       }
 
       // Consultar nuevamente los equipos
-      const datosActualizados =
-        await equiposService.listar()
+      const datosActualizados = await equiposService.listar()
 
       setEquipos(datosActualizados)
-
-      // Limpiar después de guardar
       limpiarFormulario()
 
     } catch (err) {
-
       setErrorFormulario(err.message)
 
     } finally {
-
       setGuardando(false)
+    }
+  }
+
+  // Eliminar equipo desde el servidor
+  async function eliminarEquipo(equipo) {
+
+    if (guardando || eliminandoId !== null) {
+      return
+    }
+
+    const confirmar = window.confirm(
+      `¿Deseas eliminar el equipo "${equipo.nombre}"?`
+    )
+
+    if (!confirmar) {
+      return
+    }
+
+    setErrorFormulario('')
+    setMensaje('')
+
+    try {
+      setEliminandoId(equipo.id)
+
+      // Consultar inscripciones existentes
+      const inscripciones = await inscripcionesService.listar()
+
+      // Verificar si tiene inscripciones
+      const tieneInscripciones = inscripciones.some(
+        (inscripcion) =>
+          Number(inscripcion.equipoId) === Number(equipo.id)
+      )
+
+      if (tieneInscripciones) {
+        setErrorFormulario(
+          'No puedes eliminar este equipo porque tiene ' +
+          'inscripciones registradas. Primero debes cancelarlas.'
+        )
+        return
+      }
+
+      // Eliminar mediante Team
+      await equiposService.eliminar(equipo.id)
+
+      // Actualizar listado
+      const datosActualizados = await equiposService.listar()
+
+      setEquipos(datosActualizados)
+
+      // Limpiar si era el equipo seleccionado
+      if (Number(editandoId) === Number(equipo.id)) {
+        limpiarFormulario()
+      }
+
+      setMensaje(
+        `Equipo "${equipo.nombre}" eliminado correctamente.`
+      )
+
+    } catch (err) {
+      setErrorFormulario(err.message)
+
+    } finally {
+      setEliminandoId(null)
     }
   }
 
@@ -222,8 +279,7 @@ function ResumenEquiposApi() {
         </h3>
 
         <p className="text-secondary mb-4">
-          Información obtenida desde Team y Game
-          mediante Gateway.
+          Información obtenida desde Team y Game mediante Gateway.
         </p>
 
         {/* ESTADO DE CARGA */}
@@ -257,24 +313,18 @@ function ResumenEquiposApi() {
             </div>
 
             {/* FORMULARIO */}
-            <div
-              className="border border-secondary rounded-3 p-4 mb-4 bg-body-tertiary"
-            >
+            <div className="border border-secondary rounded-3 p-4 mb-4 bg-body-tertiary">
 
               <h4 className="h5 mb-2 text-dark">
-
                 {editandoId !== null
                   ? `Editar equipo N° ${editandoId}`
                   : 'Crear equipo con API (EP3)'}
-
               </h4>
 
               <p className="text-secondary mb-4">
-
                 {editandoId !== null
-                  ? 'Modifica los datos del equipo y guarda los cambios.'
-                  : 'Completa los datos para registrar un equipo en el servidor.'}
-
+                  ? 'Modifica los datos y guarda los cambios.'
+                  : 'Completa los datos para registrar un equipo.'}
               </p>
 
               <form onSubmit={guardarEquipo} noValidate>
@@ -296,7 +346,7 @@ function ResumenEquiposApi() {
                       id="nombreEquipoApi"
                       name="nombre"
                       className="form-control form-control-lg bg-white border border-2 border-secondary text-dark"
-                      placeholder="Ej.: Equipo Prueba EP3 C"
+                      placeholder="Ej.: Equipo Prueba EP3"
                       value={formulario.nombre}
                       onChange={cambiarCampo}
                       disabled={guardando}
@@ -323,7 +373,7 @@ function ResumenEquiposApi() {
                       id="coachEquipoApi"
                       name="coach"
                       className="form-control form-control-lg bg-white border border-2 border-secondary text-dark"
-                      placeholder="Ej.: Coach Tercero"
+                      placeholder="Ej.: Coach Principal"
                       value={formulario.coach}
                       onChange={cambiarCampo}
                       disabled={guardando}
@@ -359,10 +409,7 @@ function ResumenEquiposApi() {
                       </option>
 
                       {juegos.map((juego) => (
-                        <option
-                          key={juego.id}
-                          value={juego.id}
-                        >
+                        <option key={juego.id} value={juego.id}>
                           {juego.nombre}
                         </option>
                       ))}
@@ -375,7 +422,7 @@ function ResumenEquiposApi() {
 
                   </div>
 
-                  {/* ESTADO: SOLO DURANTE EDICION */}
+                  {/* ESTADO DEL EQUIPO */}
                   {editandoId !== null && (
 
                     <div className="col-12 col-md-4">
@@ -395,15 +442,8 @@ function ResumenEquiposApi() {
                         onChange={cambiarCampo}
                         disabled={guardando}
                       >
-
-                        <option value="ACTIVO">
-                          ACTIVO
-                        </option>
-
-                        <option value="INACTIVO">
-                          INACTIVO
-                        </option>
-
+                        <option value="ACTIVO">ACTIVO</option>
+                        <option value="INACTIVO">INACTIVO</option>
                       </select>
 
                     </div>
@@ -412,53 +452,30 @@ function ResumenEquiposApi() {
 
                 </div>
 
-                {/* MENSAJES */}
-                {errorFormulario && (
-                  <div
-                    className="alert alert-danger mt-4"
-                    role="alert"
-                  >
-                    {errorFormulario}
-                  </div>
-                )}
-
-                {mensaje && (
-                  <div
-                    className="alert alert-success mt-4"
-                    role="status"
-                  >
-                    {mensaje}
-                  </div>
-                )}
-
                 {/* BOTONES */}
                 <div className="d-flex justify-content-center gap-2 mt-4">
 
                   <button
                     type="submit"
                     className="btn btn-primary px-4 py-2"
-                    disabled={guardando}
+                    disabled={guardando || eliminandoId !== null}
                   >
-
                     {guardando
                       ? 'Guardando...'
                       : editandoId !== null
                         ? 'Guardar cambios'
                         : 'Crear equipo en el servidor'}
-
                   </button>
 
                   {editandoId !== null && (
-
                     <button
                       type="button"
                       className="btn btn-outline-secondary"
                       onClick={cancelarEdicion}
-                      disabled={guardando}
+                      disabled={guardando || eliminandoId !== null}
                     >
                       Cancelar edición
                     </button>
-
                   )}
 
                 </div>
@@ -467,7 +484,20 @@ function ResumenEquiposApi() {
 
             </div>
 
-            {/* LISTADO */}
+            {/* MENSAJES */}
+            {errorFormulario && (
+              <div className="alert alert-danger" role="alert">
+                {errorFormulario}
+              </div>
+            )}
+
+            {mensaje && (
+              <div className="alert alert-success" role="status">
+                {mensaje}
+              </div>
+            )}
+
+            {/* LISTADO DE EQUIPOS */}
             <h4 className="h5 mb-3">
               Listado de equipos del servidor
             </h4>
@@ -501,17 +531,14 @@ function ResumenEquiposApi() {
 
                       const juego = juegos.find(
                         (item) =>
-                          Number(item.id) ===
-                          Number(equipo.juegoId)
+                          Number(item.id) === Number(equipo.juegoId)
                       )
 
                       return (
                         <tr key={equipo.id}>
 
                           <td>{equipo.id}</td>
-
                           <td>{equipo.nombre}</td>
-
                           <td>{equipo.coach}</td>
 
                           <td>
@@ -523,14 +550,29 @@ function ResumenEquiposApi() {
                           <td>{equipo.estado}</td>
 
                           <td>
-                            <button
-                              type="button"
-                              className="btn btn-outline-primary btn-sm"
-                              onClick={() => iniciarEdicion(equipo)}
-                              disabled={guardando}
-                            >
-                              Editar
-                            </button>
+                            <div className="d-flex justify-content-center gap-2">
+
+                              <button
+                                type="button"
+                                className="btn btn-outline-primary btn-sm"
+                                onClick={() => iniciarEdicion(equipo)}
+                                disabled={guardando || eliminandoId !== null}
+                              >
+                                Editar
+                              </button>
+
+                              <button
+                                type="button"
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => eliminarEquipo(equipo)}
+                                disabled={guardando || eliminandoId !== null}
+                              >
+                                {eliminandoId === equipo.id
+                                  ? 'Eliminando...'
+                                  : 'Eliminar'}
+                              </button>
+
+                            </div>
                           </td>
 
                         </tr>
