@@ -1,6 +1,7 @@
 ﻿
-import { torneosData } from '../data/torneos'
-import { obtenerInscritosActuales } from '../logica/contarInscripciones'
+import { useState, useEffect } from 'react'
+import { torneosService } from '../services/torneos'
+import { juegosService } from '../services/juegos'
 import './Inicio.css'
 import InicioComplementos from '../components/InicioComplementos'
 
@@ -29,35 +30,96 @@ function obtenerFechaActual() {
   return `${anio}-${mes}-${dia}`
 }
 
-export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
+export function Inicio({
+  onNavegar,
+  onVerDetalle,
+  esAdmin = false
+}) {
+
+  const [torneos, setTorneos] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+  const [avisoJuegos, setAvisoJuegos] = useState('')
+
   const equipos = cargarRegistros('esports_equipos')
-  const inscripciones = cargarRegistros('esports_inscripciones_ep2')
+  const inscripciones = cargarRegistros(
+    'esports_inscripciones_ep2'
+  )
+
   const fechaActual = obtenerFechaActual()
 
-  // Torneos que siguen abiertos, dentro de plazo y con cupos
-  const torneosDisponibles = torneosData.filter((torneo) => {
-    const inscritos = obtenerInscritosActuales(torneo)
+  useEffect(() => {
+
+    async function cargarDatos() {
+      try {
+        setCargando(true)
+        setError('')
+        setAvisoJuegos('')
+
+        const datosTorneos = await torneosService.listar()
+
+        let datosJuegos = []
+
+        try {
+          datosJuegos = await juegosService.listar()
+        } catch {
+          setAvisoJuegos(
+            'No se pudieron cargar los nombres de los juegos.'
+          )
+        }
+
+        const torneosCompletos = datosTorneos.map((torneo) => {
+
+          const juegoEncontrado = datosJuegos.find(
+            (juego) =>
+              Number(juego.id) === Number(torneo.juegoId)
+          )
+
+          return {
+            ...torneo,
+            juego: juegoEncontrado
+              ? juegoEncontrado.nombre
+              : `Juego ID ${torneo.juegoId}`
+          }
+        })
+
+        setTorneos(torneosCompletos)
+
+      } catch (err) {
+        setError(err.message)
+
+      } finally {
+        setCargando(false)
+      }
+    }
+
+    cargarDatos()
+
+  }, [])
+
+  const torneosDisponibles = torneos.filter((torneo) => {
 
     return (
-      torneo.estado === 'Abierto' &&
-      fechaActual <= torneo.fechaCierre &&
-      inscritos < torneo.cupos
+      torneo.estado.toLowerCase() === 'abierto' &&
+      torneo.fechaCierre >= fechaActual
     )
   })
 
-  // Mostrar hasta tres torneos destacados
   const destacados = torneosDisponibles.slice(0, 3)
 
-  const imagenPortada = torneosData[0]?.imagen
+const imagenPortada =
+  `${import.meta.env?.BASE_URL || '/'}torneos/fc26.jpg`
 
   return (
     <div className="inicio">
 
       {/* PORTADA PRINCIPAL */}
       <section className="inicio-hero mb-4">
+
         <div className="row align-items-center g-4">
 
           <div className="col-12 col-lg-7">
+
             <span className="inicio-etiqueta">
               ESPORTS ARENA MANAGER
             </span>
@@ -95,6 +157,7 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
           </div>
 
           <div className="col-12 col-lg-5">
+
             <div className="inicio-portada-imagen">
 
               <img
@@ -114,7 +177,7 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
         </div>
       </section>
 
-      {/* ESTADÍSTICAS */}
+      {/* ESTADISTICAS */}
       <section className="mb-5">
 
         <div className="row g-3">
@@ -122,32 +185,48 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
           <div className="col-12 col-sm-6 col-lg-3">
             <div className="inicio-estadistica">
               <p>Torneos registrados</p>
-              <h2>{torneosData.length}</h2>
-              <small>Competiciones en la plataforma</small>
+
+              <h2>{torneos.length}</h2>
+
+              <small>
+                Registrados en el servidor
+              </small>
             </div>
           </div>
 
           <div className="col-12 col-sm-6 col-lg-3">
             <div className="inicio-estadistica">
               <p>Torneos disponibles</p>
+
               <h2>{torneosDisponibles.length}</h2>
-              <small>Abiertos y con cupos</small>
+
+              <small>
+                Abiertos dentro del plazo
+              </small>
             </div>
           </div>
 
           <div className="col-12 col-sm-6 col-lg-3">
             <div className="inicio-estadistica">
               <p>Equipos registrados</p>
+
               <h2>{equipos.length}</h2>
-              <small>Guardados en este navegador</small>
+
+              <small>
+                Guardados en este navegador
+              </small>
             </div>
           </div>
 
           <div className="col-12 col-sm-6 col-lg-3">
             <div className="inicio-estadistica">
               <p>Mis inscripciones</p>
+
               <h2>{inscripciones.length}</h2>
-              <small>Inscripciones locales realizadas</small>
+
+              <small>
+                Inscripciones locales realizadas
+              </small>
             </div>
           </div>
 
@@ -165,7 +244,8 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
             </h2>
 
             <p className="inicio-seccion-descripcion mb-0">
-              Competiciones abiertas que aún reciben participantes.
+              Competiciones abiertas que todavía están
+              dentro del plazo de inscripción.
             </p>
           </div>
 
@@ -179,23 +259,44 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
 
         </div>
 
-        {destacados.length === 0 ? (
-          <div className="inicio-mensaje">
-            Actualmente no hay torneos con inscripciones abiertas.
-            Puedes revisar el catálogo completo.
+        {/* ESTADO DE CARGA */}
+        {cargando && (
+          <div className="alert alert-info">
+            Cargando torneos...
           </div>
-        ) : (
-          <div className="row g-4">
+        )}
 
-            {destacados.map((torneo) => {
+        {/* ERROR DEL SERVIDOR */}
+        {error && (
+          <div className="alert alert-danger">
+            {error}
+          </div>
+        )}
 
-              const inscritos = obtenerInscritosActuales(torneo)
-              const disponibles = Math.max(
-                0,
-                torneo.cupos - inscritos
-              )
+        {/* AVISO SI GAME NO RESPONDE */}
+        {avisoJuegos && !error && (
+          <div className="alert alert-warning">
+            {avisoJuegos} Se mostrarán sus identificadores.
+          </div>
+        )}
 
-              return (
+        {/* RESULTADOS */}
+        {!cargando && !error && (
+
+          destacados.length === 0 ? (
+
+            <div className="inicio-mensaje">
+              Actualmente no hay torneos abiertos
+              dentro del plazo de inscripción.
+              Puedes revisar el catálogo completo.
+            </div>
+
+          ) : (
+
+            <div className="row g-4">
+
+              {destacados.map((torneo) => (
+
                 <div
                   className="col-12 col-md-6 col-lg-4"
                   key={torneo.id}
@@ -203,16 +304,28 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
 
                   <div className="inicio-torneo">
 
-                    <img
-                      src={torneo.imagen}
-                      alt={torneo.nombre}
-                      className="inicio-torneo-imagen"
-                    />
+                    {torneo.imagen ? (
+
+                      <img
+                        src={torneo.imagen}
+                        alt={torneo.nombre}
+                        className="inicio-torneo-imagen"
+                      />
+
+                    ) : (
+
+                      <div
+                        className="inicio-torneo-imagen bg-secondary d-flex align-items-center justify-content-center"
+                      >
+                        Imagen no disponible
+                      </div>
+
+                    )}
 
                     <div className="inicio-torneo-contenido">
 
                       <span className="badge bg-success mb-2">
-                        Inscripciones abiertas
+                        Torneo abierto
                       </span>
 
                       <h3 className="h5">
@@ -225,11 +338,11 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
 
                       <div className="inicio-torneo-info">
                         <span>
-                          Cupos disponibles
+                          Equipos permitidos
                         </span>
 
                         <strong>
-                          {disponibles}
+                          {torneo.cantidadEquipos}
                         </strong>
                       </div>
 
@@ -240,6 +353,16 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
 
                         <strong>
                           {torneo.fechaInicio}
+                        </strong>
+                      </div>
+
+                      <div className="inicio-torneo-info">
+                        <span>
+                          Cierre de inscripción
+                        </span>
+
+                        <strong>
+                          {torneo.fechaCierre}
                         </strong>
                       </div>
 
@@ -255,19 +378,23 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
                   </div>
 
                 </div>
-              )
-            })}
 
-          </div>
+              ))}
+
+            </div>
+
+          )
         )}
 
       </section>
-      {/* PRÓXIMOS CIERRES Y VIDEO */}
-        <InicioComplementos
-          torneos={torneosData}
-          onVerDetalle={onVerDetalle}
-        />
-      {/* ACCESOS RÁPIDOS */}
+
+      {/* PROXIMOS CIERRES Y VIDEO */}
+      <InicioComplementos
+        torneos={torneos}
+        onVerDetalle={onVerDetalle}
+      />
+
+      {/* ACCESOS RAPIDOS */}
       <section className="mb-4">
 
         <h2 className="inicio-seccion-titulo mb-4">
@@ -277,34 +404,7 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
         <div className="row g-3">
 
           <div className="col-12 col-md-4">
-              {esAdmin && (
-        <div className="col-12 col-md-4">
-          <div className="inicio-acceso">
 
-            <div className="inicio-acceso-icono">
-              <span>03</span>
-            </div>
-
-            <h3 className="h5">
-              Administración
-            </h3>
-
-            <p>
-              Consulta y administra los registros
-              disponibles en la plataforma.
-            </p>
-
-            <button
-              type="button"
-              className="btn btn-outline-primary"
-              onClick={() => onNavegar('administracion')}
-            >
-              Panel de administración
-            </button>
-
-          </div>
-        </div>
-      )}
             <div className="inicio-acceso">
 
               <div className="inicio-acceso-icono">
@@ -332,6 +432,7 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
           </div>
 
           <div className="col-12 col-md-4">
+
             <div className="inicio-acceso">
 
               <div className="inicio-acceso-icono">
@@ -358,32 +459,38 @@ export function Inicio({ onNavegar, onVerDetalle, esAdmin = false }) {
             </div>
           </div>
 
-          <div className="col-12 col-md-4">
-            <div className="inicio-acceso">
+          {/* SOLO PARA ADMINISTRADORES */}
+          {esAdmin && (
 
-              <div className="inicio-acceso-icono">
-                <span>03</span>
+            <div className="col-12 col-md-4">
+
+              <div className="inicio-acceso">
+
+                <div className="inicio-acceso-icono">
+                  <span>03</span>
+                </div>
+
+                <h3 className="h5">
+                  Administración
+                </h3>
+
+                <p>
+                  Consulta y administra los registros
+                  disponibles en la plataforma.
+                </p>
+
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  onClick={() => onNavegar('administracion')}
+                >
+                  Panel de administración
+                </button>
+
               </div>
-
-              <h3 className="h5">
-                Administración
-              </h3>
-
-              <p>
-                Consulta y administra los registros
-                disponibles en la plataforma.
-              </p>
-
-              <button
-                type="button"
-                className="btn btn-outline-primary"
-                onClick={() => onNavegar('administracion')}
-              >
-                Panel de administración
-              </button>
-
             </div>
-          </div>
+
+          )}
 
         </div>
 
