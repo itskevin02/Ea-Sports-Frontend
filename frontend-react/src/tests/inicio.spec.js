@@ -34,8 +34,43 @@ const juegosPrueba = [
   }
 ]
 
+// Equipos ficticios
+const equiposPrueba = [
+  {
+    id: 1,
+    nombre: 'Equipo A'
+  },
+  {
+    id: 2,
+    nombre: 'Equipo B'
+  }
+]
+
+// Inscripciones ficticias
+const inscripcionesPrueba = [
+  {
+    id: 1,
+    equipoId: 1,
+    torneoId: 1,
+    estado: 'ACTIVA'
+  },
+  {
+    id: 2,
+    equipoId: 2,
+    torneoId: 1,
+    estado: 'ACTIVA'
+  },
+  {
+    id: 3,
+    equipoId: 1,
+    torneoId: 2,
+    estado: 'ACTIVA'
+  }
+]
+
 // Simular una respuesta correcta de la API
 function respuestaApi(datos) {
+
   return {
     ok: true,
     status: 200,
@@ -46,15 +81,35 @@ function respuestaApi(datos) {
 // Simular las respuestas de los microservicios
 function simularPeticion(url) {
 
+  // Tournament
   if (url.endsWith('/tournaments')) {
+
     return Promise.resolve(
       respuestaApi(torneosPrueba)
     )
   }
 
+  // Game
   if (url.endsWith('/games')) {
+
     return Promise.resolve(
       respuestaApi(juegosPrueba)
+    )
+  }
+
+  // Team
+  if (url.endsWith('/teams')) {
+
+    return Promise.resolve(
+      respuestaApi(equiposPrueba)
+    )
+  }
+
+  // Registration
+  if (url.endsWith('/registrations')) {
+
+    return Promise.resolve(
+      respuestaApi(inscripcionesPrueba)
     )
   }
 
@@ -78,6 +133,7 @@ describe('Pruebas de Inicio EP3', () => {
     cleanup()
   })
 
+  // PRUEBA 01
   it('01. Carga torneos y nombres de juegos desde la API', async () => {
 
     render(
@@ -105,6 +161,7 @@ describe('Pruebas de Inicio EP3', () => {
 
   })
 
+  // PRUEBA 02
   it('02. Permite navegar y abrir el detalle del torneo', async () => {
 
     const navegar = jasmine.createSpy('navegar')
@@ -155,11 +212,13 @@ describe('Pruebas de Inicio EP3', () => {
 
   })
 
+  // PRUEBA 03
   it('03. Muestra un mensaje cuando no existen torneos', async () => {
 
     window.fetch.and.callFake((url) => {
 
       if (url.endsWith('/tournaments')) {
+
         return Promise.resolve(
           respuestaApi([])
         )
@@ -187,11 +246,13 @@ describe('Pruebas de Inicio EP3', () => {
 
   })
 
+  // PRUEBA 04
   it('04. Mantiene los torneos visibles si Game falla', async () => {
 
     window.fetch.and.callFake((url) => {
 
       if (url.endsWith('/games')) {
+
         return Promise.reject(
           new Error('Game no disponible')
         )
@@ -225,11 +286,13 @@ describe('Pruebas de Inicio EP3', () => {
 
   })
 
+  // PRUEBA 05
   it('05. Muestra un error si Tournament no responde', async () => {
 
     window.fetch.and.callFake((url) => {
 
       if (url.endsWith('/tournaments')) {
+
         return Promise.reject(
           new Error('Tournament no disponible')
         )
@@ -257,6 +320,7 @@ describe('Pruebas de Inicio EP3', () => {
 
   })
 
+  // PRUEBA 06
   it('06. Restringe el acceso a administracion por rol', () => {
 
     const navegar = jasmine.createSpy('navegar')
@@ -296,6 +360,39 @@ describe('Pruebas de Inicio EP3', () => {
     expect(navegar).toHaveBeenCalledWith(
       'administracion'
     )
+
+  })
+
+  // PRUEBA 07
+  it('07. Muestra equipos e inscripciones desde la API', async () => {
+
+    render(
+      <Inicio
+        onNavegar={() => {}}
+        onVerDetalle={() => {}}
+      />
+    )
+
+    // Esperar a que se carguen los contadores
+    expect(
+      await screen.findByText('2')
+    ).not.toBeNull()
+
+    expect(
+      await screen.findByText('3')
+    ).not.toBeNull()
+
+    // Verificar los nombres de las estadisticas
+    expect(
+      screen.getByText('Equipos registrados')
+    ).not.toBeNull()
+
+    expect(
+      screen.getByText('Inscripciones registradas')
+    ).not.toBeNull()
+
+    // Verificar las consultas realizadas
+    expect(window.fetch).toHaveBeenCalled()
 
   })
 
