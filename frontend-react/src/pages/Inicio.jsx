@@ -1,26 +1,15 @@
-﻿
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
+
 import { torneosService } from '../services/torneos'
 import { juegosService } from '../services/juegos'
+import { equiposService } from '../services/equipos'
+import { inscripcionesService } from '../services/inscripciones'
+
 import './Inicio.css'
 import InicioComplementos from '../components/InicioComplementos'
 
-function cargarRegistros(clave) {
-  try {
-    const datos = localStorage.getItem(clave)
-
-    if (datos) {
-      const registros = JSON.parse(datos)
-      return Array.isArray(registros) ? registros : []
-    }
-  } catch {
-    return []
-  }
-
-  return []
-}
-
 function obtenerFechaActual() {
+
   const fecha = new Date()
 
   const anio = fecha.getFullYear()
@@ -37,21 +26,23 @@ export function Inicio({
 }) {
 
   const [torneos, setTorneos] = useState([])
+  const [equipos, setEquipos] = useState(null)
+  const [inscripciones, setInscripciones] = useState(null)
+
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [avisoJuegos, setAvisoJuegos] = useState('')
-
-  const equipos = cargarRegistros('esports_equipos')
-  const inscripciones = cargarRegistros(
-    'esports_inscripciones_ep2'
-  )
+  const [avisoEquipos, setAvisoEquipos] = useState('')
+  const [avisoInscripciones, setAvisoInscripciones] = useState('')
 
   const fechaActual = obtenerFechaActual()
 
   useEffect(() => {
 
     async function cargarDatos() {
+
       try {
+
         setCargando(true)
         setError('')
         setAvisoJuegos('')
@@ -61,8 +52,11 @@ export function Inicio({
         let datosJuegos = []
 
         try {
+
           datosJuegos = await juegosService.listar()
+
         } catch {
+
           setAvisoJuegos(
             'No se pudieron cargar los nombres de los juegos.'
           )
@@ -86,14 +80,59 @@ export function Inicio({
         setTorneos(torneosCompletos)
 
       } catch (err) {
+
         setError(err.message)
 
       } finally {
+
         setCargando(false)
       }
     }
 
+    async function cargarEquipos() {
+
+      try {
+
+        setAvisoEquipos('')
+
+        const datosEquipos = await equiposService.listar()
+
+        setEquipos(datosEquipos)
+
+      } catch {
+
+        setEquipos(null)
+
+        setAvisoEquipos(
+          'No se pudieron cargar los equipos.'
+        )
+      }
+    }
+
+    async function cargarInscripciones() {
+
+      try {
+
+        setAvisoInscripciones('')
+
+        const datosInscripciones =
+          await inscripcionesService.listar()
+
+        setInscripciones(datosInscripciones)
+
+      } catch {
+
+        setInscripciones(null)
+
+        setAvisoInscripciones(
+          'No se pudieron cargar las inscripciones.'
+        )
+      }
+    }
+
     cargarDatos()
+    cargarEquipos()
+    cargarInscripciones()
 
   }, [])
 
@@ -107,8 +146,8 @@ export function Inicio({
 
   const destacados = torneosDisponibles.slice(0, 3)
 
-const imagenPortada =
-  `${import.meta.env?.BASE_URL || '/'}torneos/fc26.jpg`
+  const imagenPortada =
+    `${import.meta.env?.BASE_URL || '/'}torneos/fc26.jpg`
 
   return (
     <div className="inicio">
@@ -154,6 +193,7 @@ const imagenPortada =
               </button>
 
             </div>
+
           </div>
 
           <div className="col-12 col-lg-5">
@@ -172,9 +212,11 @@ const imagenPortada =
               </div>
 
             </div>
+
           </div>
 
         </div>
+
       </section>
 
       {/* ESTADISTICAS */}
@@ -182,8 +224,11 @@ const imagenPortada =
 
         <div className="row g-3">
 
+          {/* TORNEOS REGISTRADOS */}
           <div className="col-12 col-sm-6 col-lg-3">
+
             <div className="inicio-estadistica">
+
               <p>Torneos registrados</p>
 
               <h2>{torneos.length}</h2>
@@ -191,11 +236,16 @@ const imagenPortada =
               <small>
                 Registrados en el servidor
               </small>
+
             </div>
+
           </div>
 
+          {/* TORNEOS DISPONIBLES */}
           <div className="col-12 col-sm-6 col-lg-3">
+
             <div className="inicio-estadistica">
+
               <p>Torneos disponibles</p>
 
               <h2>{torneosDisponibles.length}</h2>
@@ -203,34 +253,57 @@ const imagenPortada =
               <small>
                 Abiertos dentro del plazo
               </small>
+
             </div>
+
           </div>
 
+          {/* EQUIPOS DESDE TEAM */}
           <div className="col-12 col-sm-6 col-lg-3">
+
             <div className="inicio-estadistica">
+
               <p>Equipos registrados</p>
 
-              <h2>{equipos.length}</h2>
+              <h2>
+                {equipos === null
+                  ? '—'
+                  : equipos.length}
+              </h2>
 
               <small>
-                Guardados en este navegador
+                {avisoEquipos ||
+                  'Registrados en el servidor'}
               </small>
+
             </div>
+
           </div>
 
+          {/* INSCRIPCIONES DESDE REGISTRATION */}
           <div className="col-12 col-sm-6 col-lg-3">
-            <div className="inicio-estadistica">
-              <p>Mis inscripciones</p>
 
-              <h2>{inscripciones.length}</h2>
+            <div className="inicio-estadistica">
+
+              <p>Inscripciones registradas</p>
+
+              <h2>
+                {inscripciones === null
+                  ? '—'
+                  : inscripciones.length}
+              </h2>
 
               <small>
-                Inscripciones locales realizadas
+                {avisoInscripciones ||
+                  'Registradas en el servidor'}
               </small>
+
             </div>
+
           </div>
 
         </div>
+
       </section>
 
       {/* TORNEOS DESTACADOS */}
@@ -239,6 +312,7 @@ const imagenPortada =
         <div className="d-flex justify-content-between align-items-center gap-3 mb-4 flex-wrap">
 
           <div>
+
             <h2 className="inicio-seccion-titulo">
               Torneos destacados
             </h2>
@@ -247,6 +321,7 @@ const imagenPortada =
               Competiciones abiertas que todavía están
               dentro del plazo de inscripción.
             </p>
+
           </div>
 
           <button
@@ -337,6 +412,7 @@ const imagenPortada =
                       </p>
 
                       <div className="inicio-torneo-info">
+
                         <span>
                           Equipos permitidos
                         </span>
@@ -344,9 +420,11 @@ const imagenPortada =
                         <strong>
                           {torneo.cantidadEquipos}
                         </strong>
+
                       </div>
 
                       <div className="inicio-torneo-info">
+
                         <span>
                           Fecha de inicio
                         </span>
@@ -354,9 +432,11 @@ const imagenPortada =
                         <strong>
                           {torneo.fechaInicio}
                         </strong>
+
                       </div>
 
                       <div className="inicio-torneo-info">
+
                         <span>
                           Cierre de inscripción
                         </span>
@@ -364,6 +444,7 @@ const imagenPortada =
                         <strong>
                           {torneo.fechaCierre}
                         </strong>
+
                       </div>
 
                       <button
@@ -375,6 +456,7 @@ const imagenPortada =
                       </button>
 
                     </div>
+
                   </div>
 
                 </div>
@@ -403,6 +485,7 @@ const imagenPortada =
 
         <div className="row g-3">
 
+          {/* GESTION DE EQUIPOS */}
           <div className="col-12 col-md-4">
 
             <div className="inicio-acceso">
@@ -416,8 +499,8 @@ const imagenPortada =
               </h3>
 
               <p>
-                Crea equipos, selecciona capitanes
-                y administra los integrantes.
+                Crea y administra equipos registrados
+                en la plataforma.
               </p>
 
               <button
@@ -429,8 +512,10 @@ const imagenPortada =
               </button>
 
             </div>
+
           </div>
 
+          {/* PERFIL */}
           <div className="col-12 col-md-4">
 
             <div className="inicio-acceso">
@@ -457,6 +542,7 @@ const imagenPortada =
               </button>
 
             </div>
+
           </div>
 
           {/* SOLO PARA ADMINISTRADORES */}
@@ -488,6 +574,7 @@ const imagenPortada =
                 </button>
 
               </div>
+
             </div>
 
           )}
@@ -496,6 +583,7 @@ const imagenPortada =
 
       </section>
 
+      {/* PIE DE PAGINA */}
       <footer className="inicio-footer">
         eSports Arena Manager — Plataforma de gestión de torneos
       </footer>
