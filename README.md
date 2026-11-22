@@ -1,201 +1,337 @@
 
-# eSports Arena Manager
+# eSports Arena Manager — Frontend
 
-**eSports Arena Manager** es una aplicación frontend para la gestión de torneos de videojuegos competitivos.
+## Desarrollo Fullstack II | Evaluación Parcial 3
 
-Permite consultar torneos, registrar jugadores, crear equipos, realizar inscripciones y administrar sanciones mediante una interfaz desarrollada con React.
+eSports Arena Manager es una aplicación web académica para
+gestionar torneos de videojuegos, equipos, inscripciones,
+usuarios y sanciones.
 
-Esta versión corresponde a la **Evaluación Parcial 2 (EP2)** de Desarrollo Fullstack II y continúa el proyecto realizado durante la EP1.
+El frontend está desarrollado con React y Vite y se comunica
+con un backend de microservicios Spring Boot mediante API REST.
 
-## 1. Tecnologías utilizadas
+El proyecto evolucionó durante tres etapas:
 
-El proyecto fue desarrollado utilizando:
+- **EP1:** interfaz inicial con HTML, CSS y JavaScript.
+- **EP2:** migración a React, componentes reutilizables,
+  validaciones, localStorage y pruebas automatizadas.
+- **EP3:** integración con los microservicios, autenticación
+  JWT, permisos por rol y consulta de información real.
 
-- HTML5
-- CSS3
-- JavaScript
+---
+
+## 1. Repositorios
+
+**Frontend:**
+
+https://github.com/itskevin02/Ea-Sports-Frontend
+
+**Backend:**
+
+https://github.com/itskevin02/Ea-Sports-Backend
+
+El backend utiliza Java 21, Spring Boot, Eureka, Gateway,
+Spring Security, JWT, Spring Data JPA y H2 Database.
+
+---
+
+## 2. Tecnologías
+
+### Desarrollo frontend
+
 - React 19
 - Vite 8
+- JavaScript
+- JSX
+- HTML5
+- CSS3
 - Bootstrap 5
 - React Bootstrap
 - Node.js y npm
-- Git y GitHub
 
-Para las pruebas automatizadas se utilizaron:
+### Pruebas
 
 - Jasmine
 - Karma
 - karma-esbuild
 - React Testing Library
 - ChromeHeadless
+- karma-coverage
 
-La aplicación utiliza `localStorage` para almacenar información en el navegador.
+### Herramientas
 
-Actualmente funciona como un frontend independiente, sin backend ni base de datos externa.
+- Visual Studio Code
+- Git y GitHub
+- PowerShell
+- Navegador web
+- GitHub Actions
 
-## 2. Migración de la EP1 a React
+---
 
-Durante la EP1, el proyecto se desarrolló utilizando páginas HTML, CSS y JavaScript.
+## 3. Arquitectura e integración
 
-Para la EP2 se realizó una migración a React utilizando Vite como herramienta de desarrollo.
+El frontend consume las API del backend a través de
+Spring Cloud Gateway.
 
-### Proceso de migración
+```text
+          USUARIO
+             |
+             v
+      FRONTEND REACT
+        Puerto 5173
+             |
+             | HTTP / JSON
+             v
+       API GATEWAY
+        Puerto 8080
+             |
+             v
+          EUREKA
+        Puerto 8761
+             |
+    +--------+----------+
+    |        |          |
+    v        v          v
+   AUTH     USER     OTROS SERVICIOS
+   8081     8083      Spring Boot
+    |        |          |
+    +--------+----------+
+             |
+             v
+       BASES DE DATOS H2
+```
 
-1. Se creó la estructura inicial del proyecto React con Vite.
-2. Se configuró Bootstrap para mantener el diseño adaptable.
-3. Se transformaron las pantallas originales en páginas React.
-4. Se crearon componentes reutilizables.
-5. Se implementaron props y estados para manejar la información.
-6. Se separaron las validaciones y funciones del sistema.
-7. Se implementó almacenamiento local mediante localStorage.
-8. Se desarrollaron pruebas unitarias con Jasmine y Karma.
-9. Se configuró la publicación en GitHub Pages.
+Gateway recibe las peticiones y las dirige al
+microservicio correspondiente.
 
-### Ventajas de la migración
+En el frontend se utiliza una capa de servicios
+para centralizar las peticiones HTTP.
 
-La migración permitió:
+### Carpeta `src/services`
 
-- Reutilizar componentes entre distintas pantallas.
-- Separar mejor las responsabilidades.
-- Mantener el código organizado.
-- Actualizar información mediante estados.
-- Facilitar la incorporación de funcionalidades.
-- Realizar pruebas automatizadas.
+Los archivos de esta carpeta permiten consultar
+las diferentes API:
 
-## 3. Funcionalidades principales
+- `api.js`: función común para las peticiones HTTP.
+- `auth.js`: inicio de sesión.
+- `sesion.js`: manejo de la sesión JWT.
+- `usuarios.js`: operaciones de usuarios y mi perfil.
+- `juegos.js`: gestión de juegos.
+- `torneos.js`: consulta de torneos.
+- `equipos.js`: gestión de equipos.
+- `inscripciones.js`: gestión de inscripciones.
+- `sanciones.js`: gestión de sanciones.
 
-### Inicio
+---
 
-La pantalla de inicio incluye:
+## 4. Funcionalidades del frontend
 
-- Presentación de eSports Arena Manager.
-- Información general de la plataforma.
-- Estadísticas de torneos, equipos e inscripciones.
-- Torneos destacados.
-- Próximos cierres de inscripción.
-- Video relacionado con competencias de eSports.
-- Accesos rápidos a las funcionalidades.
+### 4.1 Inicio
 
-### Torneos
+La aplicación dispone de una pantalla inicial
+con información de eSports Arena Manager y
+accesos a sus funcionalidades.
 
-El catálogo permite:
+### 4.2 Torneos
 
-- Consultar los torneos registrados.
-- Buscar torneos por nombre o videojuego.
-- Filtrar por videojuego.
+La vista de torneos permite:
+
+- Consultar torneos obtenidos del backend.
+- Buscar por nombre o videojuego.
+- Filtrar por juego.
 - Filtrar por estado.
-- Filtrar por fechas de inicio.
+- Filtrar por fechas.
 - Validar rangos de fechas incorrectos.
-- Limpiar los filtros.
-- Mostrar mensajes cuando no existen resultados.
-- Acceder al detalle de cada torneo.
+- Limpiar filtros.
+- Consultar el detalle de un torneo.
 
-### Detalle del torneo
+Cuando la información de un juego no está disponible,
+el sistema puede mostrar su identificador.
 
-Cada torneo presenta:
+### 4.3 Detalle de torneo
 
-- Nombre, videojuego y plataforma.
-- Descripción de la competencia.
-- Fecha de inicio y cierre de inscripción.
-- Estado del torneo.
-- Participantes inscritos.
-- Cupos disponibles.
-- Listado de participantes.
-- Tabla de posiciones.
-- Llaves de enfrentamientos.
-- Calendario de partidas.
-- Premios simbólicos.
+La vista integrada con la API presenta datos como:
 
-Los resultados y las clasificaciones se muestran según el estado del torneo y los datos disponibles.
+- Nombre.
+- Juego asociado.
+- Plataforma.
+- Ubicación.
+- Estado.
+- Cantidad de equipos.
+- Fecha de inicio.
+- Cierre de inscripción.
+- Descripción.
+- Imagen opcional.
 
-### Inscripciones
+Las funcionalidades históricas de EP2 se conservan
+en componentes separados cuando corresponde.
 
-El sistema permite inscribir jugadores y equipos.
+### 4.4 Videojuegos
 
-Se implementaron validaciones para:
+La sección Juegos permite consultar
+los videojuegos registrados en el backend.
 
-- Estado del torneo.
-- Fecha de cierre.
-- Cupos disponibles.
-- Tipo de participante.
-- Cantidad de integrantes.
-- Estado activo del equipo.
-- Inscripciones duplicadas.
-- Sanciones de jugadores.
-- Sanciones de integrantes de equipos.
+Las cuentas con permisos administrativos pueden
+realizar las operaciones habilitadas de gestión.
 
-También permite cancelar inscripciones mediante un botón de eliminación con confirmación.
+### 4.5 Equipos
 
-Al eliminar una inscripción se libera el cupo correspondiente.
+La aplicación permite trabajar con equipos
+registrados en el microservicio Team.
 
-### Gestión de equipos
+Se integraron las operaciones de:
 
-Permite:
+- Consulta de equipos.
+- Creación.
+- Actualización.
+- Eliminación.
 
-- Crear equipos.
-- Seleccionar un videojuego.
-- Asignar un capitán.
-- Agregar integrantes.
-- Evitar integrantes repetidos.
-- Comprobar la cantidad de integrantes.
-- Retirar integrantes.
-- Eliminar equipos con confirmación.
+El backend mantiene las validaciones de negocio,
+incluyendo la restricción para eliminar equipos
+que tengan inscripciones asociadas.
 
-Al eliminar un equipo también se eliminan sus inscripciones locales asociadas.
+### 4.6 Inscripciones
 
-### Perfil de jugador
+La sección Inscripción se conecta al servicio
+Registration para administrar las inscripciones
+registradas en el servidor.
 
-Permite:
+El proyecto conserva componentes de EP2
+con validaciones y lógica anterior, separados
+de las operaciones integradas con la API.
 
-- Registrar perfiles.
-- Consultar información del jugador.
-- Editar apodo y correo electrónico.
-- Consultar equipos asociados.
-- Consultar inscripciones.
-- Visualizar el historial disponible.
-- Consultar sanciones registradas.
+### 4.7 Administración
 
-### Administración
+El panel de Administración utiliza los
+servicios User y Sanction.
 
-El panel permite:
+Incluye funcionalidades para:
 
-- Registrar jugadores.
-- Editar información.
-- Consultar jugadores registrados.
-- Eliminar jugadores sin vínculos pendientes.
-- Identificar sanciones vigentes.
-- Aplicar sanciones.
-- Registrar motivo y fecha de término.
-- Levantar sanciones.
-- Conservar el historial de sanciones.
+- Consultar usuarios.
+- Crear usuarios.
+- Actualizar usuarios.
+- Eliminar usuarios.
+- Consultar sanciones.
+- Crear y administrar sanciones.
 
-Los jugadores sancionados no pueden realizar nuevas inscripciones mientras exista una sanción vigente.
+El backend valida los permisos y las reglas
+de negocio correspondientes.
 
-El sistema también impide inscribir equipos que tengan integrantes sancionados.
+La sección administrativa solo se muestra
+a las cuentas identificadas como ADMIN.
 
-## 4. Estructura del proyecto
+También se conserva una vista opcional
+de los registros anteriores de EP2.
 
-La aplicación React se encuentra en la carpeta `frontend-react`.
+### 4.8 Inicio de sesión
+
+Se implementó una pantalla de autenticación
+con usuario y contraseña.
+
+La petición se realiza mediante:
+
+```http
+POST /auth/login
+```
+
+El backend verifica las credenciales y devuelve
+un token JWT junto con los datos de la cuenta.
+
+El frontend utiliza esa información para
+administrar el estado de sesión.
+
+### 4.9 Sesión JWT
+
+La aplicación incorpora:
+
+- Almacenamiento local de la sesión.
+- Recuperación de sesión al abrir la aplicación.
+- Comprobación de vencimiento del JWT.
+- Cierre de sesión.
+- Manejo de respuestas HTTP 401.
+- Manejo de respuestas HTTP 403.
+- Envío del token en peticiones protegidas.
+
+Ejemplo de encabezado:
+
+```http
+Authorization: Bearer TOKEN_JWT
+```
+
+La validación efectiva de permisos se realiza
+en los microservicios protegidos, no solamente
+ocultando botones en React.
+
+### 4.10 Mi cuenta y mi perfil
+
+La pantalla Perfil distingue dos fuentes
+de información.
+
+**Información de Auth**
+
+- Nombre de usuario.
+- Rol.
+
+**Información de User**
+
+- Nombre del perfil.
+- Nickname.
+- Correo.
+- Estado.
+
+El frontend consulta:
+
+```http
+GET /users/mi-perfil
+```
+
+El backend obtiene `authId` desde el JWT
+y busca el perfil correspondiente.
+
+De esta forma, el frontend no necesita
+indicar manualmente el ID de otro usuario.
+
+Si la cuenta no tiene un perfil vinculado,
+la pantalla presenta un aviso.
+
+Los administradores también pueden acceder
+a los perfiles históricos de EP2.
+
+---
+
+## 5. Estructura del repositorio
 
 ```text
 Ea-Sports-Frontend/
 |
 |-- README.md
+|-- index.html
+|-- torneos.html
+|-- detalle-torneo.html
+|-- equipo.html
+|-- inscripcion.html
+|-- perfil.html
+|-- css/
+|-- js/
 |
 |-- frontend-react/
 |   |-- public/
 |   |-- src/
+|   |   |-- auth/
 |   |   |-- components/
 |   |   |-- data/
 |   |   |-- logica/
 |   |   |-- pages/
+|   |   |-- services/
 |   |   |-- tests/
 |   |   |-- App.jsx
 |   |   |-- main.jsx
 |   |
+|   |-- .env.development
 |   |-- package.json
 |   |-- vite.config.js
 |   |-- karma.conf.cjs
+|   |-- karma.coverage.conf.cjs
 |   |-- README.md
 |
 |-- .github/
@@ -203,261 +339,468 @@ Ea-Sports-Frontend/
         |-- deploy-react-pages.yml
 ```
 
-### Responsabilidad de las carpetas
+### Organización
 
-- `components`: componentes reutilizables de React.
+- `auth`: contexto y gestión de autenticación.
+- `components`: componentes React reutilizables.
+- `data`: datos y recursos de las etapas anteriores.
+- `logica`: funciones y validaciones del frontend.
 - `pages`: pantallas principales.
-- `logica`: funciones y validaciones.
-- `data`: información inicial y datos de demostración.
+- `services`: comunicación con las API y sesión.
 - `tests`: pruebas automatizadas.
-- `public`: imágenes y recursos estáticos.
+- `public`: recursos estáticos.
 
-## 5. Requisitos
+---
 
-Se recomienda tener instalado:
+## 6. Requisitos de ejecución
 
-- Node.js 22.
+Para ejecutar el frontend se requiere:
+
+- Node.js, preferentemente versión 22.
 - npm.
-- Visual Studio Code.
-- Google Chrome.
 - Git.
+- Navegador web.
+- Backend disponible para las funciones de EP3.
 
-## 6. Instalación y ejecución
+Comprobar las herramientas:
 
-### Clonar el repositorio
+```powershell
+node -v
+npm -v
+git --version
+```
+
+---
+
+## 7. Instalación
+
+Clonar el repositorio:
 
 ```powershell
 git clone https://github.com/itskevin02/Ea-Sports-Frontend.git
 ```
 
-Entrar a la carpeta:
+Ingresar al proyecto:
 
 ```powershell
 cd Ea-Sports-Frontend
 ```
 
-Seleccionar la rama correspondiente a la EP2:
+Seleccionar la rama de integración:
 
 ```powershell
 git switch develop
+git pull origin develop
 ```
 
-### Instalar dependencias
+Entrar a React:
 
 ```powershell
-npm install --prefix frontend-react
+cd frontend-react
 ```
 
-### Ejecutar la aplicación
+Instalar dependencias:
 
 ```powershell
-npm --prefix frontend-react run dev
+npm install
 ```
 
-Vite mostrará una dirección local, normalmente:
+---
+
+## 8. Configuración de la API
+
+La aplicación utiliza la variable:
+
+```properties
+VITE_API_URL=http://localhost:8080
+```
+
+Esta configuración se encuentra en:
 
 ```text
-http://localhost:5173/
+frontend-react/.env.development
 ```
 
-Abrir esa dirección en el navegador.
+La dirección corresponde a Spring Cloud Gateway.
 
-## 7. Pruebas automatizadas
+Para trabajar localmente, se deben iniciar
+los servicios del backend necesarios para
+la funcionalidad que se quiera probar.
 
-Para verificar las funcionalidades se implementaron pruebas utilizando Jasmine, Karma y React Testing Library.
+El backend tiene su propio README con
+las instrucciones de ejecución.
 
-Se utilizó `karma-esbuild` para procesar los archivos JavaScript y JSX.
+### Puertos principales
 
-Las pruebas verifican comportamientos relacionados con:
+| Componente | Puerto |
+|---|---|
+| React / Vite | 5173 |
+| Gateway | 8080 |
+| Auth | 8081 |
+| Game | 8082 |
+| User | 8083 |
+| Team | 8084 |
+| Tournament | 8085 |
+| Registration | 8086 |
+| Sanction | 8089 |
+| Eureka | 8761 |
 
-- Visualización de torneos.
+Los demás puertos se encuentran documentados
+en el repositorio backend.
+
+---
+
+## 9. Iniciar la aplicación
+
+Desde `frontend-react`:
+
+```powershell
+npm run dev
+```
+
+Abrir en el navegador:
+
+http://localhost:5173
+
+Para utilizar las funciones conectadas con
+Spring Boot, comprobar que Gateway y los
+microservicios requeridos estén ejecutándose.
+
+---
+
+## 10. Pruebas automatizadas
+
+Se implementaron pruebas utilizando Jasmine,
+Karma y React Testing Library.
+
+Se comprueban funcionalidades relacionadas con:
+
+- Componentes React.
+- Validaciones de formularios.
 - Búsqueda y filtros.
 - Navegación.
-- Validaciones de inscripción.
-- Cálculo de cupos.
-- Fechas de inscripción.
-- Requisitos de equipos.
+- Torneos.
+- Equipos.
+- Inscripciones.
 - Sanciones.
-- Componentes de ranking.
-- Eliminación de equipos.
-- Eliminación de inscripciones.
-- Validaciones de jugadores.
+- Información de administración.
+- Sesión y autenticación.
+- Perfil conectado con la API.
+- Respuestas correctas y errores del servidor.
 
-### Ejecutar pruebas
-
-Desde la raíz del repositorio:
+### Ejecutar las pruebas
 
 ```powershell
-npm --prefix frontend-react test
+npm test
 ```
 
-### Resultado final
+### Resultado comprobado durante EP3
 
 ```text
-TOTAL: 29 SUCCESS
+TOTAL: 63 SUCCESS
 ```
 
-Se ejecutaron correctamente las **29 pruebas unitarias**.
+Las 63 pruebas finalizaron correctamente
+durante la comprobación final del frontend.
 
-No se registraron pruebas fallidas en la última ejecución.
+Varias pruebas utilizan respuestas simuladas
+de API; por eso no es necesario mantener
+todos los microservicios encendidos para
+ejecutar la suite de Karma.
 
-Durante las pruebas pueden aparecer advertencias de imágenes o recursos estáticos debido a que Karma utiliza un servidor diferente al de Vite.
+---
 
-Estas advertencias no impidieron finalizar correctamente las pruebas.
+## 11. Cobertura de código
 
+Desde EP2 se cuenta con una configuración
+independiente para medir cobertura.
 
-### Cobertura de código
+Archivo:
 
-Para complementar las pruebas unitarias se implementó
-cobertura de código utilizando Jasmine, Karma y
-karma-coverage, siguiendo el material de clases.
+```text
+karma.coverage.conf.cjs
+```
 
-Se creó una configuración independiente para medir
-funciones JavaScript de la carpeta `src/logica`,
-manteniendo intactas las 29 pruebas originales.
+Los casos correspondientes están en:
 
-#### Módulos analizados
+```text
+pruebas-cobertura/
+```
 
-- `validarInscripcion.js`: validaciones de inscripción.
-- `eliminarInscripcion.js`: eliminación de inscripciones.
-- `ranking.js`: ordenamiento y cálculo de puntos.
-- `eliminarEquipo.js`: eliminación de equipos.
-- `gestionarJugadores.js`: actualización y eliminación de jugadores.
+Los módulos seleccionados son:
 
-#### Resultados de cobertura
+- `validarInscripcion.js`
+- `eliminarInscripcion.js`
+- `ranking.js`
+- `eliminarEquipo.js`
+- `gestionarJugadores.js`
 
-| Indicador | Resultado |
-|---|---:|
-| Sentencias | 100 % (33/33) |
-| Ramas | 100 % (19/19) |
-| Funciones | 100 % (15/15) |
-| Líneas | 100 % (32/32) |
-
-Estos porcentajes corresponden exclusivamente a los
-cinco módulos seleccionados de lógica, no a la totalidad
-del frontend React.
-
-#### Ejecutar la cobertura
-
-Desde la carpeta `frontend-react`:
+### Ejecutar cobertura
 
 ```powershell
 .\node_modules\.bin\karma.cmd start karma.coverage.conf.cjs
 ```
 
-Para abrir el informe HTML:
+Abrir el informe HTML:
 
 ```powershell
 Start-Process .\coverage\html\index.html
 ```
 
-Las pruebas de cobertura están organizadas en
-`pruebas-cobertura` y se ejecutan independientemente
-de las 29 pruebas originales.
+En la evaluación anterior se registró
+100 % de cobertura para los cinco módulos
+de lógica seleccionados.
 
-La medición permite identificar el código ejecutado
-por las pruebas y comprobar el comportamiento de
-los módulos seleccionados.
+Ese resultado no representa la cobertura
+total de la aplicación React ni una nueva
+medición global de EP3.
 
-Como mejora futura se propone ampliar la cobertura
-a otros módulos y componentes React.
+---
 
+## 12. Compilación
 
-## 8. Compilación de producción
-
-Para generar la versión de producción:
+Para comprobar que el frontend compila:
 
 ```powershell
-npm --prefix frontend-react run build
+npm run build
 ```
 
-Vite genera los archivos compilados en:
+Los archivos generados quedan en:
 
 ```text
 frontend-react/dist/
 ```
 
-La compilación fue verificada correctamente durante las pruebas finales de la EP2.
+También se puede ejecutar:
 
-## 9. Almacenamiento de datos
+```powershell
+npm run lint
+```
 
-La aplicación utiliza `localStorage` para conservar información en el navegador.
+Este último comando utiliza Oxlint
+para revisar el código.
 
-Entre los datos almacenados se encuentran:
+---
 
-- Jugadores registrados.
-- Equipos creados.
+## 13. Persistencia y almacenamiento
+
+Durante EP2 se utilizó localStorage para
+guardar información en el navegador.
+
+En EP3 se incorporó la integración con los
+microservicios del backend.
+
+### Datos obtenidos desde el backend
+
+- Cuentas de autenticación.
+- Perfiles User.
+- Videojuegos.
+- Torneos.
+- Equipos.
 - Inscripciones.
 - Sanciones.
-- Historial de sanciones.
-- Datos de demostración.
 
-La información se conserva al actualizar la página dentro del mismo navegador.
+### Datos locales conservados
 
-Los datos no se sincronizan entre dispositivos o navegadores, ya que esta versión no utiliza una base de datos centralizada.
+Se mantienen determinados registros de
+EP2 en localStorage, como parte de la
+compatibilidad con las funcionalidades
+anteriores.
 
-## 10. Trabajo colaborativo y GitHub
+La sesión JWT también se almacena en el
+navegador, de acuerdo con la implementación
+actual del proyecto.
 
-El proyecto utiliza Git y GitHub para organizar el trabajo del equipo.
+La persistencia de los datos del servidor
+depende de las bases H2 del backend y del
+perfil utilizado al iniciar cada microservicio.
 
-Las ramas principales son:
+### Modo persistente del backend
 
-- `main`: versión correspondiente a la EP1.
-- `develop`: integración y publicación de la EP2.
-- `feature/react-torneos`: desarrollo del módulo de torneos.
-- `feature/react-inscripciones`: desarrollo de inscripciones y equipos.
-- `feature/react-administracion`: desarrollo de perfil y administración.
-- `feature/cierre-final-ep2`: ajustes y mejoras finales.
-- Otras ramas `feature/*`: correcciones y mejoras posteriores.
+El backend permite iniciar servicios con:
 
-Las funcionalidades se desarrollaron en ramas separadas para conservar la autoría mediante commits individuales.
+```powershell
+mvn -pl msvc-user spring-boot:run "-Dspring-boot.run.profiles=persistente"
+```
 
-Los cambios se prueban antes de integrarse a `develop`.
+Esto activa una base H2 en archivo para
+el servicio indicado.
 
-## 11. Publicación en GitHub Pages
+El frontend no administra directamente
+los archivos de base de datos.
 
-La aplicación se publica mediante GitHub Actions.
+---
 
-El archivo de despliegue se encuentra en:
+## 14. Git y trabajo colaborativo
+
+Se utilizó GitHub para organizar
+los avances y mantener evidencia
+de los cambios realizados.
+
+### Flujo de ramas
+
+- `main`: versión estable.
+- `develop`: integración del proyecto.
+- `feature/*`: nuevas funcionalidades.
+- `fix/*`: correcciones.
+- `refactor/*`: reorganización de código.
+
+### Procedimiento
+
+1. Crear una rama desde `develop`.
+2. Implementar la funcionalidad.
+3. Ejecutar las pruebas.
+4. Comprobar la compilación.
+5. Crear un commit.
+6. Subir la rama.
+7. Crear un Pull Request hacia `develop`.
+8. Revisar y fusionar los cambios.
+
+Durante EP3 se realizaron PR para
+integración de API, autenticación, perfil,
+administración y pruebas automatizadas.
+
+---
+
+## 15. GitHub Pages
+
+El repositorio incluye un workflow de
+GitHub Actions:
 
 ```text
 .github/workflows/deploy-react-pages.yml
 ```
 
-Al actualizarse la rama `develop`, GitHub Actions ejecuta la compilación y publica la aplicación.
+El workflow se ejecuta al actualizar
+la rama `develop`.
 
-### Sitio publicado
+Utiliza Node.js 22, instala dependencias,
+compila React y publica los archivos de `dist`.
+
+Dirección del sitio:
 
 https://itskevin02.github.io/Ea-Sports-Frontend/
 
-La dirección muestra la última versión desplegada correctamente desde `develop`.
+### Consideración sobre EP3
 
-## 12. Alcance de la EP2
+GitHub Pages aloja el frontend estático,
+pero no ejecuta los microservicios Java.
 
-La evaluación está enfocada en el desarrollo frontend con React.
+La versión de EP3 utiliza una API configurada
+localmente en `localhost:8080`.
 
-Se implementaron:
+Para que una versión publicada funcione
+con el backend desde otros computadores,
+es necesario desplegar un backend accesible
+y configurar su URL pública en la compilación
+del frontend.
 
-- Migración desde HTML, CSS y JavaScript.
-- Componentes reutilizables.
-- Props y estados.
-- Formularios controlados.
-- Validaciones.
-- Navegación entre pantallas.
-- Persistencia local.
-- Diseño adaptable con Bootstrap.
-- Pruebas automatizadas.
-- Despliegue en GitHub Pages.
-- Trabajo colaborativo mediante Git.
+La publicación de React, por sí sola,
+no demuestra un despliegue completo de EP3.
 
-El sistema utiliza datos de demostración.
+---
 
-No incluye autenticación real, backend, base de datos centralizada ni sincronización entre usuarios.
+## 16. Pruebas de integración realizadas
 
-## 13. Repositorio
+Durante EP3 se comprobó el funcionamiento
+del frontend junto con los microservicios
+ejecutados localmente.
 
-Código fuente:
+Se verificaron funcionalidades como:
 
-https://github.com/itskevin02/Ea-Sports-Frontend
+- Login con cuentas Auth.
+- Reconocimiento de roles.
+- Acceso administrativo.
+- Consulta del perfil vinculado.
+- Visualización de nombre, nickname,
+  correo y estado desde User.
+- Manejo de ausencia de perfil.
+- Consulta de torneos y juegos.
+- Integración de las pantallas administrativas.
 
-Proyecto académico desarrollado para la Evaluación Parcial 2 de Desarrollo Fullstack II.
+También se comprobaron las peticiones HTTP
+y las reglas de negocio del backend por separado.
+
+---
+
+## 17. Evolución del proyecto
+
+### EP1
+
+Desarrollo inicial con HTML, CSS y JavaScript.
+
+### EP2
+
+Migración a React, componentes reutilizables,
+validaciones, formularios, almacenamiento local,
+cobertura y pruebas automatizadas.
+
+### EP3
+
+Integración con los microservicios mediante
+Gateway, autenticación JWT, control de permisos,
+administración conectada a las API y consulta
+del perfil real de usuario.
+
+Se conservaron ciertas funcionalidades
+históricas para facilitar la transición
+entre evaluaciones.
+
+---
+
+## 18. Limitaciones y mejoras futuras
+
+El proyecto se desarrolló para fines académicos.
+
+Consideraciones actuales:
+
+- El backend debe estar disponible para
+  utilizar las funciones integradas.
+- Los registros históricos de localStorage
+  no se migraron automáticamente a H2.
+- El perfil de usuario requiere una
+  vinculación administrativa con Auth.
+- GitHub Pages publica React, no Spring Boot.
+- El despliegue completo requiere una API
+  pública y configuración adicional.
+- Las pruebas automatizadas no reemplazan
+  las comprobaciones HTTP reales.
+- La configuración de sesión en el navegador
+  puede reforzarse en futuras versiones.
+
+---
+
+## 19. Estado final de EP3
+
+- Frontend React integrado con API REST.
+- Inicio de sesión JWT implementado.
+- Permisos de interfaz por rol.
+- Servicios centralizados para peticiones HTTP.
+- Perfil de usuario conectado a Auth y User.
+- Pantallas de equipos, inscripciones y
+  administración conectadas al backend.
+- 63 pruebas automatizadas exitosas.
+- Compilación Vite verificada.
+- Trabajo integrado mediante Pull Requests.
+- Persistencia configurable en el backend.
+
+**Estado:** versión académica EP3 integrada
+en la rama `develop`.
+
+---
+
+## 20. Conclusión
+
+eSports Arena Manager permitió integrar
+los conocimientos de desarrollo frontend
+con la arquitectura de microservicios
+implementada en el backend.
+
+La aplicación evolucionó desde una interfaz
+estática hasta un frontend React que consume
+API REST, administra sesiones y utiliza
+información registrada en el servidor.
+
+El proyecto permite continuar incorporando
+mejoras de funcionalidad, seguridad,
+persistencia y despliegue.
