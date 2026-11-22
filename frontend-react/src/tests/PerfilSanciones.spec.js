@@ -8,7 +8,7 @@ import {
   cleanup
 } from '@testing-library/react'
 
-import Perfil from '../pages/Perfil'
+import Perfil from '../pages/PerfilEp2'
 
 describe('Pruebas de sanciones en Perfil', () => {
 
@@ -16,12 +16,10 @@ describe('Pruebas de sanciones en Perfil', () => {
 
   beforeEach(() => {
 
-    // Guardar los datos actuales del navegador
     jugadoresAnteriores = localStorage.getItem(
       'esports_jugadores'
     )
 
-    // Jugadores ficticios para la prueba
     const jugadoresPrueba = [
       {
         id: 9001,
@@ -62,7 +60,6 @@ describe('Pruebas de sanciones en Perfil', () => {
 
     cleanup()
 
-    // Restaurar los datos anteriores
     if (jugadoresAnteriores === null) {
       localStorage.removeItem('esports_jugadores')
     } else {
@@ -78,12 +75,10 @@ describe('Pruebas de sanciones en Perfil', () => {
 
     render(<Perfil />)
 
-    // Primer jugador: sanción vigente
     expect(
       screen.getByText(/Conducta antideportiva/)
     ).not.toBeNull()
 
-    // Cambiar al segundo jugador
     const selector = screen.getByLabelText(
       'Seleccionar jugador'
     )
@@ -92,12 +87,10 @@ describe('Pruebas de sanciones en Perfil', () => {
       target: { value: '9002' }
     })
 
-    // La sanción anterior ya no debe aparecer
     expect(
       screen.queryByText(/Conducta antideportiva/)
     ).toBeNull()
 
-    // Debe aparecer la sanción cumplida
     expect(
       screen.getByText(/Abandono de partida/)
     ).not.toBeNull()
