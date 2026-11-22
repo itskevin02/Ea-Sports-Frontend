@@ -1,38 +1,63 @@
 
 import { useState, useEffect } from 'react'
+
 import { juegosService } from '../services/juegos'
 import { useAuth } from '../auth/useAuth'
+
+const generos = [
+  'Deportes',
+  'Carreras',
+  'Acción',
+  'Estrategia',
+  'Lucha',
+  'Disparos',
+  'MOBA',
+  'Battle Royale',
+  'Otro'
+]
+
+const modalidades = [
+  'Online',
+  'Offline',
+  'Ambas'
+]
+
+const formularioVacio = {
+  nombre: '',
+  genero: '',
+  modalidad: '',
+  jugadoresPorEquipo: '',
+  estado: 'ACTIVO'
+}
 
 function Juegos() {
 
   const { usuario } = useAuth()
   const esAdmin = usuario?.rol === 'ADMIN'
 
-  const formularioVacio = {
-    nombre: '',
-    genero: '',
-    modalidad: '',
-    jugadoresPorEquipo: '',
-    estado: 'ACTIVO'
-  }
-
   const [juegos, setJuegos] = useState([])
   const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState('')
-  const [mensaje, setMensaje] = useState('')
-  const [form, setForm] = useState(formularioVacio)
-  const [idEdicion, setIdEdicion] = useState(null)
   const [guardando, setGuardando] = useState(false)
 
-  // Cargar los juegos desde Spring Boot
+  const [formulario, setFormulario] = useState({
+    ...formularioVacio
+  })
+
+  const [editandoId, setEditandoId] = useState(null)
+
+  const [error, setError] = useState('')
+  const [mensaje, setMensaje] = useState('')
+
   useEffect(() => {
 
     async function cargarJuegos() {
+
       try {
         setCargando(true)
         setError('')
 
         const datos = await juegosService.listar()
+
         setJuegos(datos)
 
       } catch (err) {
@@ -47,39 +72,89 @@ function Juegos() {
 
   }, [])
 
-  // Actualizar los campos del formulario
-  function cambiar(evento) {
-    setForm({
-      ...form,
-      [evento.target.name]: evento.target.value
+  function cambiarCampo(evento) {
+
+    const { name, value } = evento.target
+
+    setFormulario({
+      ...formulario,
+      [name]: value
     })
+
+    setError('')
+    setMensaje('')
   }
 
-  // Crear o actualizar un juego
-  async function guardar(evento) {
-    evento.preventDefault()
+  function limpiarFormulario() {
+    setFormulario({ ...formularioVacio })
+    setEditandoId(null)
+  }
+
+  function iniciarEdicion(juego) {
 
     if (!esAdmin) {
       return
     }
 
+    setEditandoId(juego.id)
+
+    setFormulario({
+      nombre: juego.nombre,
+      genero: juego.genero,
+      modalidad: juego.modalidad,
+      jugadoresPorEquipo: String(juego.jugadoresPorEquipo),
+      estado: juego.estado
+    })
+
     setError('')
     setMensaje('')
-    setGuardando(true)
+  }
 
-    const datos = {
-      nombre: form.nombre,
-      genero: form.genero,
-      modalidad: form.modalidad,
-      jugadoresPorEquipo: Number(form.jugadoresPorEquipo),
-      estado: form.estado
+  async function guardarJuego(evento) {
+
+    evento.preventDefault()
+
+    if (!esAdmin || guardando) {
+      return
+    }
+
+    setError('')
+    setMensaje('')
+
+    const nombre = formulario.nombre.trim()
+    const cantidad = Number(formulario.jugadoresPorEquipo)
+
+    if (
+      !nombre ||
+      !formulario.genero ||
+      !formulario.modalidad ||
+      !formulario.jugadoresPorEquipo
+    ) {
+      setError('Debes completar todos los campos.')
+      return
+    }
+
+    if (!Number.isInteger(cantidad) || cantidad <= 0) {
+      setError(
+        'Los jugadores por equipo deben ser un entero mayor a cero.'
+      )
+      return
+    }
+
+    const datosJuego = {
+      nombre: nombre,
+      genero: formulario.genero,
+      modalidad: formulario.modalidad,
+      jugadoresPorEquipo: cantidad,
+      estado: formulario.estado
     }
 
     try {
+      setGuardando(true)
 
-      if (idEdicion === null) {
+      if (editandoId === null) {
 
-        const nuevo = await juegosService.crear(datos)
+        const nuevo = await juegosService.crear(datosJuego)
 
         setJuegos((actuales) => [...actuales, nuevo])
         setMensaje('Videojuego registrado correctamente.')
@@ -87,21 +162,20 @@ function Juegos() {
       } else {
 
         const actualizado = await juegosService.actualizar(
-          idEdicion,
-          datos
+          editandoId,
+          datosJuego
         )
 
         setJuegos((actuales) =>
           actuales.map((juego) =>
-            juego.id === idEdicion ? actualizado : juego
+            juego.id === editandoId ? actualizado : juego
           )
         )
 
         setMensaje('Videojuego actualizado correctamente.')
       }
 
-      setForm(formularioVacio)
-      setIdEdicion(null)
+      limpiarFormulario()
 
     } catch (err) {
       setError(err.message)
@@ -111,52 +185,34 @@ function Juegos() {
     }
   }
 
-  // Cargar los datos del juego que se editará
-  function editar(juego) {
-    if (!esAdmin) {
+  async function eliminarJuego(juego) {
+
+    if (!esAdmin || guardando) {
       return
     }
 
-    setForm({
-      nombre: juego.nombre,
-      genero: juego.genero,
-      modalidad: juego.modalidad,
-      jugadoresPorEquipo: String(juego.jugadoresPorEquipo),
-      estado: juego.estado
-    })
+    const confirmar = window.confirm(
+      `¿Deseas eliminar el videojuego "${juego.nombre}"?`
+    )
 
-    setIdEdicion(juego.id)
-    setError('')
-    setMensaje('')
-  }
-
-  // Cancelar la edición
-  function cancelarEdicion() {
-    setForm(formularioVacio)
-    setIdEdicion(null)
-    setError('')
-  }
-
-  // Eliminar un juego del backend
-  async function eliminar(id) {
-    if (!esAdmin) {
+    if (!confirmar) {
       return
     }
-
-    setError('')
-    setMensaje('')
 
     try {
-      await juegosService.eliminar(id)
+      setError('')
+      setMensaje('')
+
+      await juegosService.eliminar(juego.id)
 
       setJuegos((actuales) =>
-        actuales.filter((juego) => juego.id !== id)
+        actuales.filter((item) => item.id !== juego.id)
       )
 
       setMensaje('Videojuego eliminado correctamente.')
 
-      if (idEdicion === id) {
-        cancelarEdicion()
+      if (editandoId === juego.id) {
+        limpiarFormulario()
       }
 
     } catch (err) {
@@ -175,97 +231,152 @@ function Juegos() {
       {esAdmin && (
 
         <div className="card bg-dark text-white border-secondary mb-4">
+
           <div className="card-body">
 
             <h3 className="h5 mb-3">
-              {idEdicion === null
+              {editandoId === null
                 ? 'Registrar videojuego'
                 : 'Editar videojuego'}
             </h3>
 
-            <form onSubmit={guardar}>
+            <form onSubmit={guardarJuego} noValidate>
+
               <div className="row g-3">
 
+                {/* NOMBRE */}
                 <div className="col-12 col-md-6">
-                  <label className="form-label" htmlFor="nombre">
+
+                  <label htmlFor="nombreJuego" className="form-label">
                     Nombre
                   </label>
 
                   <input
-                    id="nombre"
+                    id="nombreJuego"
                     name="nombre"
                     className="form-control"
-                    value={form.nombre}
-                    onChange={cambiar}
-                    required
+                    placeholder="Ej.: EA Sports FC"
+                    value={formulario.nombre}
+                    onChange={cambiarCampo}
                   />
+
                 </div>
 
+                {/* GÉNERO */}
                 <div className="col-12 col-md-6">
-                  <label className="form-label" htmlFor="genero">
+
+                  <label htmlFor="generoJuego" className="form-label">
                     Género
                   </label>
 
-                  <input
-                    id="genero"
+                  <select
+                    id="generoJuego"
                     name="genero"
-                    className="form-control"
-                    value={form.genero}
-                    onChange={cambiar}
-                    required
-                  />
+                    className="form-select"
+                    value={formulario.genero}
+                    onChange={cambiarCampo}
+                  >
+                    <option value="">
+                      Selecciona un género
+                    </option>
+
+                    {formulario.genero &&
+                      !generos.includes(formulario.genero) && (
+                        <option value={formulario.genero}>
+                          {formulario.genero}
+                        </option>
+                      )}
+
+                    {generos.map((genero) => (
+                      <option key={genero} value={genero}>
+                        {genero}
+                      </option>
+                    ))}
+                  </select>
+
                 </div>
 
+                {/* MODALIDAD */}
                 <div className="col-12 col-md-6">
-                  <label className="form-label" htmlFor="modalidad">
-                    Modalidad
+
+                  <label htmlFor="modalidadJuego" className="form-label">
+                    Modalidad del videojuego
                   </label>
 
-                  <input
-                    id="modalidad"
+                  <select
+                    id="modalidadJuego"
                     name="modalidad"
-                    className="form-control"
-                    value={form.modalidad}
-                    onChange={cambiar}
-                    required
-                  />
+                    className="form-select"
+                    value={formulario.modalidad}
+                    onChange={cambiarCampo}
+                  >
+                    <option value="">
+                      Selecciona una modalidad
+                    </option>
+
+                    {formulario.modalidad &&
+                      !modalidades.includes(formulario.modalidad) && (
+                        <option value={formulario.modalidad}>
+                          {formulario.modalidad}
+                        </option>
+                      )}
+
+                    {modalidades.map((modalidad) => (
+                      <option key={modalidad} value={modalidad}>
+                        {modalidad}
+                      </option>
+                    ))}
+                  </select>
+
                 </div>
 
+                {/* JUGADORES */}
                 <div className="col-12 col-md-3">
-                  <label className="form-label" htmlFor="jugadores">
+
+                  <label htmlFor="jugadoresJuego" className="form-label">
                     Jugadores por equipo
                   </label>
 
                   <input
-                    id="jugadores"
+                    id="jugadoresJuego"
                     name="jugadoresPorEquipo"
                     type="number"
                     min="1"
+                    step="1"
                     className="form-control"
-                    value={form.jugadoresPorEquipo}
-                    onChange={cambiar}
-                    required
+                    value={formulario.jugadoresPorEquipo}
+                    onChange={cambiarCampo}
                   />
+
                 </div>
 
+                {/* ESTADO */}
                 <div className="col-12 col-md-3">
-                  <label className="form-label" htmlFor="estado">
+
+                  <label htmlFor="estadoJuego" className="form-label">
                     Estado
                   </label>
 
                   <select
-                    id="estado"
+                    id="estadoJuego"
                     name="estado"
                     className="form-select"
-                    value={form.estado}
-                    onChange={cambiar}
+                    value={formulario.estado}
+                    onChange={cambiarCampo}
                   >
-                    <option value="ACTIVO">ACTIVO</option>
-                    <option value="INACTIVO">INACTIVO</option>
+                    <option value="ACTIVO">
+                      Activo
+                    </option>
+
+                    <option value="INACTIVO">
+                      Inactivo
+                    </option>
                   </select>
+
                 </div>
 
-                <div className="col-12 d-flex gap-2">
+                {/* BOTONES */}
+                <div className="col-12 d-flex flex-wrap gap-2">
 
                   <button
                     type="submit"
@@ -274,16 +385,19 @@ function Juegos() {
                   >
                     {guardando
                       ? 'Guardando...'
-                      : idEdicion === null
+                      : editandoId === null
                         ? 'Registrar juego'
                         : 'Guardar cambios'}
                   </button>
 
-                  {idEdicion !== null && (
+                  {editandoId !== null && (
                     <button
                       type="button"
                       className="btn btn-outline-light"
-                      onClick={cancelarEdicion}
+                      onClick={() => {
+                        limpiarFormulario()
+                        setError('')
+                      }}
                     >
                       Cancelar
                     </button>
@@ -292,23 +406,24 @@ function Juegos() {
                 </div>
 
               </div>
+
             </form>
 
           </div>
-        </div>
 
+        </div>
       )}
 
       {/* MENSAJES */}
-      {mensaje && (
-        <div className="alert alert-success">
-          {mensaje}
-        </div>
-      )}
-
       {error && (
         <div className="alert alert-danger">
           {error}
+        </div>
+      )}
+
+      {mensaje && (
+        <div className="alert alert-success">
+          {mensaje}
         </div>
       )}
 
@@ -324,17 +439,20 @@ function Juegos() {
         </div>
       )}
 
-      {/* LISTADO DE VIDEOJUEGOS */}
+      {/* LISTADO */}
       {!cargando && juegos.length > 0 && (
+
         <div className="row g-3">
 
           {juegos.map((juego) => (
+
             <div
               className="col-12 col-md-6 col-lg-4"
               key={juego.id}
             >
 
               <div className="card bg-dark text-white border-secondary h-100">
+
                 <div className="card-body">
 
                   <h3 className="h5">
@@ -342,7 +460,6 @@ function Juegos() {
                   </h3>
 
                   <p>Género: {juego.genero}</p>
-
                   <p>Modalidad: {juego.modalidad}</p>
 
                   <p>
@@ -351,14 +468,13 @@ function Juegos() {
 
                   <p>Estado: {juego.estado}</p>
 
-                  {/* ACCIONES SOLO PARA ADMIN */}
                   {esAdmin && (
                     <div className="d-flex gap-2 mt-3">
 
                       <button
                         type="button"
                         className="btn btn-warning btn-sm"
-                        onClick={() => editar(juego)}
+                        onClick={() => iniciarEdicion(juego)}
                       >
                         Editar
                       </button>
@@ -366,7 +482,7 @@ function Juegos() {
                       <button
                         type="button"
                         className="btn btn-danger btn-sm"
-                        onClick={() => eliminar(juego.id)}
+                        onClick={() => eliminarJuego(juego)}
                       >
                         Eliminar
                       </button>
@@ -375,6 +491,7 @@ function Juegos() {
                   )}
 
                 </div>
+
               </div>
 
             </div>
