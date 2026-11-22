@@ -2,20 +2,12 @@
 import { useState, useEffect } from 'react'
 import validarPerfil from '../logica/validarPerfil'
 import registrarJugador from '../logica/registrarJugador'
-
-import {
-  actualizarJugador,
-  eliminarJugador as eliminarJugadorDeLista
-} from '../logica/gestionarJugadores'
-
-import {
-  cargarJugadores,
-  guardarJugadores
-} from '../logica/almacenamientoJugadores'
-
+import {actualizarJugador,eliminarJugador as eliminarJugadorDeLista} from '../logica/gestionarJugadores'
+import {cargarJugadores,guardarJugadores} from '../logica/almacenamientoJugadores'
 import { tieneSancionActiva } from '../logica/sanciones'
+import ResumenUsuariosApi from '../components/ResumenUsuariosApi'
+import ResumenSancionesApi from '../components/ResumenSancionesApi'
 
-// Obtener la fecha actual
 function obtenerFechaActual() {
   const fecha = new Date()
 
@@ -28,12 +20,10 @@ function obtenerFechaActual() {
 
 function Administracion() {
 
-  // Jugadores guardados en el navegador
   const [jugadores, setJugadores] = useState(
     () => cargarJugadores(localStorage)
   )
 
-  // Formulario de jugadores
   const [formulario, setFormulario] = useState({
     apodo: '',
     correo: ''
@@ -44,24 +34,20 @@ function Administracion() {
   const [modo, setModo] = useState('nuevo')
   const [idEditando, setIdEditando] = useState(null)
 
-  // Formulario de sanciones
   const [idJugadorSancion, setIdJugadorSancion] = useState(null)
   const [motivoSancion, setMotivoSancion] = useState('')
   const [fechaFinSancion, setFechaFinSancion] = useState('')
   const [errorSancion, setErrorSancion] = useState('')
   const [mensajeSancion, setMensajeSancion] = useState('')
 
-  // Jugador al que se desea aplicar una sanción
   const jugadorSeleccionado = jugadores.find(
     (jugador) => jugador.id === idJugadorSancion
   )
 
-  // Guardar jugadores y sanciones en localStorage
   useEffect(() => {
     guardarJugadores(jugadores, localStorage)
   }, [jugadores])
 
-  // Cambiar campos del formulario
   function cambiarCampo(evento) {
     const { name, value } = evento.target
 
@@ -78,7 +64,6 @@ function Administracion() {
     setMensaje('')
   }
 
-  // Limpiar formulario de jugadores
   function limpiarFormulario() {
     setFormulario({
       apodo: '',
@@ -90,14 +75,12 @@ function Administracion() {
     setIdEditando(null)
   }
 
-  // Registrar o actualizar un jugador
   function guardarJugador(evento) {
     evento.preventDefault()
 
     const apodo = formulario.apodo.trim()
     const correo = formulario.correo.trim()
 
-    // Registrar jugador
     if (modo === 'nuevo') {
 
       const resultado = registrarJugador(
@@ -119,7 +102,6 @@ function Administracion() {
       return
     }
 
-    // Validar datos al editar
     const nuevosErrores = validarPerfil(
       apodo,
       correo,
@@ -153,7 +135,6 @@ function Administracion() {
       return
     }
 
-    // Actualizar sin perder las sanciones
     const jugadoresActualizados = actualizarJugador(
       jugadores,
       idEditando,
@@ -166,7 +147,6 @@ function Administracion() {
     setMensaje('Jugador actualizado correctamente.')
   }
 
-  // Editar jugador seleccionado
   function editarJugador(jugador) {
     setFormulario({
       apodo: jugador.apodo,
@@ -184,10 +164,8 @@ function Administracion() {
     setMensaje('')
   }
 
-  // Eliminar un jugador
   function eliminarJugador(jugador) {
 
-    // Evitar eliminar jugadores vinculados a equipos
     let equipos = []
 
     try {
@@ -224,7 +202,6 @@ function Administracion() {
       return
     }
 
-    // Evitar eliminar participantes con inscripciones
     let inscripciones = []
 
     try {
@@ -278,7 +255,6 @@ function Administracion() {
     setMensaje('Jugador eliminado correctamente.')
   }
 
-  // Seleccionar jugador para sancionar
   function abrirSancion(jugador) {
     setIdJugadorSancion(jugador.id)
     setMotivoSancion('')
@@ -287,7 +263,6 @@ function Administracion() {
     setMensajeSancion('')
   }
 
-  // Cancelar formulario de sanción
   function cancelarSancion() {
     setIdJugadorSancion(null)
     setMotivoSancion('')
@@ -295,7 +270,6 @@ function Administracion() {
     setErrorSancion('')
   }
 
-  // Aplicar sanción
   function aplicarSancion(evento) {
     evento.preventDefault()
 
@@ -340,7 +314,6 @@ function Administracion() {
       return
     }
 
-    // Historial de sanciones anteriores
     const sancionesAnteriores =
       Array.isArray(jugadorSeleccionado.sanciones)
         ? jugadorSeleccionado.sanciones
@@ -354,7 +327,6 @@ function Administracion() {
         ) + 1
       : 1
 
-    // Nueva sanción
     const nuevaSancion = {
       id: nuevoId,
       estado: 'Vigente',
@@ -387,7 +359,6 @@ function Administracion() {
     cancelarSancion()
   }
 
-  // Levantar sanción y conservar historial
   function levantarSancion(jugador) {
 
     const confirmar = window.confirm(
@@ -447,6 +418,12 @@ function Administracion() {
       <p className="text-white-50 mb-4">
         Gestiona los jugadores registrados y sus sanciones.
       </p>
+
+      {/* USUARIOS REALES - EP3 */}
+      <ResumenUsuariosApi />
+
+      {/* SANCIONES REALES - EP3 */}
+        <ResumenSancionesApi />
 
       {/* REGISTRAR Y EDITAR JUGADORES */}
       <div className="card mb-4">
