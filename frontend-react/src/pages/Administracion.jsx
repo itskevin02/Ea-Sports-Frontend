@@ -2,18 +2,10 @@
 import { useState, useEffect } from 'react'
 import validarPerfil from '../logica/validarPerfil'
 import registrarJugador from '../logica/registrarJugador'
-
-import {
-  actualizarJugador,
-  eliminarJugador as eliminarJugadorDeLista
-} from '../logica/gestionarJugadores'
-
-import {
-  cargarJugadores,
-  guardarJugadores
-} from '../logica/almacenamientoJugadores'
-
+import {actualizarJugador,eliminarJugador as eliminarJugadorDeLista} from '../logica/gestionarJugadores'
+import {cargarJugadores,guardarJugadores} from '../logica/almacenamientoJugadores'
 import { tieneSancionActiva } from '../logica/sanciones'
+import ResumenUsuariosApi from '../components/ResumenUsuariosApi'
 
 // Obtener la fecha actual
 function obtenerFechaActual() {
@@ -447,6 +439,9 @@ function Administracion() {
       <p className="text-white-50 mb-4">
         Gestiona los jugadores registrados y sus sanciones.
       </p>
+
+      {/* USUARIOS REALES - EP3 */}
+      <ResumenUsuariosApi />
 
       {/* REGISTRAR Y EDITAR JUGADORES */}
       <div className="card mb-4">
