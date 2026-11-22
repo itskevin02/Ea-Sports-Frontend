@@ -1,3 +1,4 @@
+
 import { solicitar } from './api'
 
 export const usuariosService = {
@@ -5,6 +6,8 @@ export const usuariosService = {
   listar: () => solicitar('/users'),
 
   obtener: (id) => solicitar(`/users/${id}`),
+
+  miPerfil: () => solicitar('/users/mi-perfil'),
 
   crear: (usuario) =>
     solicitar('/users', {
