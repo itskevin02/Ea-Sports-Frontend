@@ -1,6 +1,8 @@
 
 import { useState } from 'react'
+
 import { useAuth } from '../auth/useAuth'
+import Registro from './Registro'
 
 function Login({ onLogin }) {
 
@@ -12,6 +14,7 @@ function Login({ onLogin }) {
   })
 
   const [mostrarPassword, setMostrarPassword] = useState(false)
+  const [mostrarRegistro, setMostrarRegistro] = useState(false)
 
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -41,6 +44,15 @@ function Login({ onLogin }) {
     }
   }
 
+  if (mostrarRegistro) {
+    return (
+      <Registro
+        onRegistro={onLogin}
+        onVolver={() => setMostrarRegistro(false)}
+      />
+    )
+  }
+
   return (
     <div className="row justify-content-center py-5">
 
@@ -50,19 +62,15 @@ function Login({ onLogin }) {
 
           <div className="card-body p-4">
 
-            <h2 className="h4 mb-4">
+            <h2 className="h4 text-center mb-4">
               Iniciar sesión
             </h2>
 
             <form onSubmit={entrar}>
 
-              {/* USUARIO */}
               <div className="mb-3">
 
-                <label
-                  htmlFor="username"
-                  className="form-label"
-                >
+                <label htmlFor="username" className="form-label">
                   Usuario
                 </label>
 
@@ -78,13 +86,9 @@ function Login({ onLogin }) {
 
               </div>
 
-              {/* CONTRASEÑA */}
               <div className="mb-3">
 
-                <label
-                  htmlFor="password"
-                  className="form-label"
-                >
+                <label htmlFor="password" className="form-label">
                   Contraseña
                 </label>
 
@@ -114,26 +118,19 @@ function Login({ onLogin }) {
                         : 'Mostrar contraseña'
                     }
                   >
-                    {mostrarPassword
-                      ? 'Ocultar'
-                      : 'Mostrar'}
+                    {mostrarPassword ? 'Ocultar' : 'Mostrar'}
                   </button>
 
                 </div>
 
               </div>
 
-              {/* MENSAJE DE ERROR */}
               {error && (
-                <div
-                  className="alert alert-danger"
-                  role="alert"
-                >
+                <div className="alert alert-danger" role="alert">
                   {error}
                 </div>
               )}
 
-              {/* INICIAR SESIÓN */}
               <button
                 type="submit"
                 className="btn btn-primary w-100"
@@ -143,6 +140,20 @@ function Login({ onLogin }) {
               </button>
 
             </form>
+
+            <hr className="border-secondary my-4" />
+
+            <p className="text-center text-white-50 mb-2">
+              ¿Todavía no tienes una cuenta?
+            </p>
+
+            <button
+              type="button"
+              className="btn btn-outline-primary w-100"
+              onClick={() => setMostrarRegistro(true)}
+            >
+              Registrarse como jugador
+            </button>
 
           </div>
 
