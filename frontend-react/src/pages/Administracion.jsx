@@ -1,8 +1,9 @@
-
 import { useState } from 'react'
 
+import ResumenTorneosApi from '../components/ResumenTorneosApi'
 import ResumenUsuariosApi from '../components/ResumenUsuariosApi'
 import ResumenSancionesApi from '../components/ResumenSancionesApi'
+
 import AdministracionEp2 from './AdministracionEp2'
 
 function Administracion() {
@@ -17,16 +18,20 @@ function Administracion() {
       </h2>
 
       <p className="text-white-50 mb-4">
-        Gestiona los usuarios y las sanciones
+        Administra los torneos, usuarios y sanciones
         registrados en el servidor.
       </p>
 
-      {/* GESTION REAL MEDIANTE API */}
+      {/* TORNEOS DESDE EL BACKEND */}
+      <ResumenTorneosApi />
+
+      {/* USUARIOS DESDE EL BACKEND */}
       <ResumenUsuariosApi />
 
+      {/* SANCIONES DESDE EL BACKEND */}
       <ResumenSancionesApi />
 
-      {/* ACCESO A LOS DATOS ANTERIORES */}
+      {/* REGISTROS ANTERIORES DE EP2 */}
       <div className="card mb-4">
 
         <div className="card-body text-center">
@@ -56,7 +61,6 @@ function Administracion() {
 
       </div>
 
-      {/* ADMINISTRACION ANTIGUA */}
       {mostrarEp2 && (
         <AdministracionEp2 />
       )}
