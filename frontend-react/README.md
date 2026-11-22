@@ -1,147 +1,109 @@
 
-# eSports Arena Manager - Frontend React
+# eSports Arena Manager — Aplicación React
 
-Aplicación frontend desarrollada con React, Vite y Bootstrap para la Evaluación Parcial 2 del proyecto eSports Arena Manager.
+Frontend desarrollado con React 19, Vite 8,
+JavaScript y Bootstrap 5 para el proyecto
+académico eSports Arena Manager.
 
-La EP2 corresponde a la migración del proyecto original desarrollado con HTML, CSS y JavaScript hacia React.
+## Evaluación Parcial 3
 
-## Tecnologías
+La aplicación integra las API REST de los
+microservicios Spring Boot mediante Gateway.
 
-- React 19
-- JavaScript
-- JSX
-- Vite 8
-- Bootstrap 5
-- React Bootstrap
-- Jasmine
-- Karma
-- karma-esbuild
-- React Testing Library
+Entre las funcionalidades implementadas están:
 
-## Funcionalidades
+- Inicio de sesión mediante Auth y JWT.
+- Manejo de sesión y permisos por rol.
+- Consulta de videojuegos.
+- Consulta y filtros de torneos.
+- Gestión de equipos e inscripciones.
+- Administración de usuarios y sanciones.
+- Consulta del perfil vinculado mediante
+  `/users/mi-perfil`.
+- Compatibilidad con algunas vistas de EP2.
 
-La aplicación permite:
+## Requisitos
 
-- Consultar y filtrar torneos.
-- Visualizar detalles, participantes y premios.
-- Registrar y administrar jugadores.
-- Crear y gestionar equipos.
-- Inscribir jugadores y equipos.
-- Cancelar inscripciones.
-- Aplicar y levantar sanciones.
-- Validar sanciones antes de inscribir equipos.
-- Almacenar datos mediante localStorage.
+- Node.js 22 recomendado.
+- npm.
+- Backend disponible para las funciones
+  conectadas a las API.
 
 ## Instalación
-
-Desde la carpeta `frontend-react`:
 
 ```powershell
 npm install
 ```
 
-## Ejecutar aplicación
+## Configuración local
+
+El archivo `.env.development` utiliza:
+
+```properties
+VITE_API_URL=http://localhost:8080
+```
+
+## Ejecutar
 
 ```powershell
 npm run dev
 ```
 
-Vite mostrará la dirección local para abrir la aplicación.
+Aplicación local:
 
-## Ejecutar pruebas
+http://localhost:5173
+
+## Pruebas
 
 ```powershell
 npm test
 ```
 
-### Resultado verificado
+Resultado verificado en EP3:
 
 ```text
-TOTAL: 29 SUCCESS
+TOTAL: 63 SUCCESS
 ```
 
-Las 29 pruebas unitarias finalizaron correctamente.
+Las pruebas utilizan Jasmine, Karma,
+React Testing Library y ChromeHeadless.
 
-Las pruebas utilizan Jasmine y Karma, con karma-esbuild para procesar JavaScript y JSX.
-
-
-## Cobertura de código
-
-Se implementó cobertura utilizando Jasmine, Karma
-y karma-coverage.
-
-La configuración se encuentra en:
-
-`karma.coverage.conf.cjs`
-
-Las pruebas específicas están organizadas en:
-
-`pruebas-cobertura/`
-
-### Ejecutar la cobertura
-
-```powershell
-.\node_modules\.bin\karma.cmd start karma.coverage.conf.cjs
-```
-
-Abrir el informe HTML:
-
-```powershell
-Start-Process .\coverage\html\index.html
-```
-
-### Resultados
-
-Se analizaron cinco módulos de `src/logica`:
-
-- Validaciones de inscripción.
-- Eliminación de inscripciones.
-- Ranking y cálculo de puntos.
-- Eliminación de equipos.
-- Gestión de jugadores.
-
-| Métrica | Resultado |
-|---|---:|
-| Sentencias | 100 % |
-| Ramas | 100 % |
-| Funciones | 100 % |
-| Líneas | 100 % |
-
-Estos resultados corresponden solo a los cinco
-módulos analizados.
-
-Las 29 pruebas originales continúan ejecutándose
-con `npm test`.
-
-La cobertura total del frontend React no ha sido
-medida mediante esta configuración.
-
-## Compilar para producción
+## Compilación
 
 ```powershell
 npm run build
 ```
 
-Los archivos compilados se generan en:
+La salida se genera en `dist/`.
 
-```text
-dist/
+## Cobertura
+
+Existe una configuración de cobertura
+para cinco módulos de lógica heredados
+de EP2:
+
+```powershell
+.\node_modules\.bin\karma.cmd start karma.coverage.conf.cjs
 ```
 
-La compilación fue comprobada correctamente.
+La cobertura medida en esos módulos
+no representa la cobertura total de React.
 
-## Publicación
+## Backend
 
-La aplicación se publica mediante GitHub Actions desde la rama `develop`.
+Repositorio:
 
-Sitio web:
+https://github.com/itskevin02/Ea-Sports-Backend
 
-https://itskevin02.github.io/Ea-Sports-Frontend/
+## Documentación completa
 
-## Información adicional
+Consultar el [README principal](../README.md).
 
-La aplicación utiliza localStorage y datos de demostración.
+## Estado
 
-No cuenta con backend ni base de datos centralizada en esta evaluación.
+Versión académica EP3 integrada en `develop`.
 
-Para conocer el proyecto completo, revisar el [README principal](../README.md).
+La ejecución completa requiere que estén
+disponibles Gateway y los microservicios
+necesarios. GitHub Pages solo publica
+los archivos estáticos del frontend.
