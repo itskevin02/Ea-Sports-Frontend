@@ -1,4 +1,3 @@
-
 import { solicitar } from './api'
 
 export const usuariosService = {
@@ -8,6 +7,12 @@ export const usuariosService = {
   obtener: (id) => solicitar(`/users/${id}`),
 
   miPerfil: () => solicitar('/users/mi-perfil'),
+
+  registrarPerfil: (datos) =>
+    solicitar('/users/registro-perfil', {
+      method: 'POST',
+      body: JSON.stringify(datos)
+    }),
 
   crear: (usuario) =>
     solicitar('/users', {
@@ -25,4 +30,5 @@ export const usuariosService = {
     solicitar(`/users/${id}`, {
       method: 'DELETE'
     })
+
 }

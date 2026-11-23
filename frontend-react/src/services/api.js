@@ -12,6 +12,7 @@ const MENSAJES = {
 }
 
 export async function solicitar(ruta, opciones = {}) {
+
   const sesion = leerSesion()
 
   const headers = {
@@ -32,6 +33,7 @@ export async function solicitar(ruta, opciones = {}) {
     })
 
   } catch (error) {
+
     if (error.name === 'AbortError') {
       throw error
     }
@@ -39,21 +41,29 @@ export async function solicitar(ruta, opciones = {}) {
     throw new Error('No se pudo conectar con el servidor.')
   }
 
-  if (respuesta.status === 401 && sesion?.token &&
-      ruta !== '/auth/login') {
+  if (
+    respuesta.status === 401 &&
+    sesion?.token &&
+    ruta !== '/auth/login'
+  ) {
     borrarSesion()
     window.dispatchEvent(new Event('sesion-expirada'))
   }
 
   if (!respuesta.ok) {
+
     const cuerpo = await respuesta.json().catch(() => ({}))
 
-    throw new Error(
+    const error = new Error(
       cuerpo.mensaje ||
       cuerpo.error ||
       MENSAJES[respuesta.status] ||
       `Error ${respuesta.status}`
     )
+
+    error.status = respuesta.status
+
+    throw error
   }
 
   return respuesta.status === 204

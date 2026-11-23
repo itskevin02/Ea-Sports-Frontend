@@ -20,7 +20,6 @@ describe('Pruebas de Mi Perfil API EP3', () => {
       'esports_sesion_ep3'
     )
 
-    // Sesion de prueba con vencimiento futuro
     const datosToken = btoa(JSON.stringify({
       exp: Math.floor(Date.now() / 1000) + 3600
     }))
@@ -36,7 +35,6 @@ describe('Pruebas de Mi Perfil API EP3', () => {
         }
       })
     )
-
   })
 
   afterEach(() => {
@@ -51,7 +49,6 @@ describe('Pruebas de Mi Perfil API EP3', () => {
         sesionAnterior
       )
     }
-
   })
 
   function mostrarPerfil() {
@@ -72,7 +69,6 @@ describe('Pruebas de Mi Perfil API EP3', () => {
     )
   }
 
-  // PRUEBA 01
   it('Muestra el perfil vinculado desde User', async () => {
 
     spyOn(window, 'fetch').and.returnValue(
@@ -107,8 +103,7 @@ describe('Pruebas de Mi Perfil API EP3', () => {
     expect(window.fetch).toHaveBeenCalled()
   })
 
-  // PRUEBA 02
-  it('Muestra un aviso si no encuentra el perfil', async () => {
+  it('Permite completar el perfil si no existe', async () => {
 
     spyOn(window, 'fetch').and.returnValue(
       Promise.resolve({
@@ -123,13 +118,39 @@ describe('Pruebas de Mi Perfil API EP3', () => {
     mostrarPerfil()
 
     expect(
+      await screen.findByText(/Tu cuenta ya está creada/)
+    ).not.toBeNull()
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Completar mi perfil'
+      })
+    ).not.toBeNull()
+  })
+
+  it('Muestra un error cuando falla el servidor', async () => {
+
+    spyOn(window, 'fetch').and.returnValue(
+      Promise.resolve({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({
+          mensaje: 'Error del servidor'
+        })
+      })
+    )
+
+    mostrarPerfil()
+
+    expect(
       await screen.findByText(/No se pudo cargar el perfil/)
     ).not.toBeNull()
 
     expect(
-      screen.getByText(/un administrador debe asociarlo/)
-    ).not.toBeNull()
-
+      screen.queryByRole('button', {
+        name: 'Completar mi perfil'
+      })
+    ).toBeNull()
   })
 
 })

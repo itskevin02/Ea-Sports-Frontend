@@ -1,11 +1,11 @@
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
+import { useAuth } from '../auth/useAuth'
 import { torneosService } from '../services/torneos'
 import { equiposService } from '../services/equipos'
 import { inscripcionesService } from '../services/inscripciones'
 
-// Obtener la fecha actual
 function obtenerFechaActual() {
   const fecha = new Date()
   const anio = fecha.getFullYear()
@@ -17,78 +17,90 @@ function obtenerFechaActual() {
 
 function ResumenInscripcionesApi() {
 
-  // Datos del servidor
+  const { usuario } = useAuth()
+
+  const esAdmin = usuario?.rol === 'ADMIN'
+  const autenticado = Boolean(usuario?.authId)
+
   const [torneos, setTorneos] = useState([])
   const [equipos, setEquipos] = useState([])
   const [inscripciones, setInscripciones] = useState([])
 
-  // Estados de carga
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState('')
-
-  // Datos del formulario
   const [torneoId, setTorneoId] = useState('')
   const [equipoId, setEquipoId] = useState('')
 
-  // Estados para guardar y eliminar
+  const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [eliminandoId, setEliminandoId] = useState(null)
 
-  // Mensajes
-  const [errorFormulario, setErrorFormulario] = useState('')
+  const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
 
-  // Cargar los datos de los microservicios
-  useEffect(() => {
+  function puedeAdministrarEquipo(equipo) {
 
-    async function cargarDatos() {
-
-      try {
-        setCargando(true)
-        setError('')
-
-        const datosTorneos = await torneosService.listar()
-        const datosEquipos = await equiposService.listar()
-        const datosInscripciones =
-          await inscripcionesService.listar()
-
-        setTorneos(datosTorneos)
-        setEquipos(datosEquipos)
-        setInscripciones(datosInscripciones)
-
-      } catch (err) {
-        setError(err.message)
-
-      } finally {
-        setCargando(false)
-      }
+    if (!equipo) {
+      return false
     }
 
-    cargarDatos()
+    if (esAdmin) {
+      return true
+    }
 
+    return (
+      usuario?.authId != null &&
+      equipo.authId != null &&
+      Number(usuario.authId) === Number(equipo.authId)
+    )
+  }
+
+  async function cargarDatos() {
+
+    try {
+      setCargando(true)
+      setError('')
+
+      const datosTorneos = await torneosService.listar()
+      const datosEquipos = await equiposService.listar()
+      const datosInscripciones = await inscripcionesService.listar()
+
+      setTorneos(datosTorneos)
+      setEquipos(datosEquipos)
+      setInscripciones(datosInscripciones)
+
+    } catch (err) {
+      setError(err.message)
+
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  useEffect(() => {
+    cargarDatos()
   }, [])
 
-  // Buscar el torneo seleccionado
   const torneoSeleccionado = torneos.find(
     (torneo) => String(torneo.id) === torneoId
   )
 
-  // Mostrar equipos del mismo videojuego
-  const equiposDelJuego = torneoSeleccionado
-    ? equipos.filter(
-        (equipo) =>
-          Number(equipo.juegoId) ===
-          Number(torneoSeleccionado.juegoId)
-      )
-    : []
+  const equiposDisponibles = equipos.filter((equipo) => {
 
-  // Contar inscripciones del torneo
+    if (!torneoSeleccionado) {
+      return false
+    }
+
+    return (
+      Number(equipo.juegoId) ===
+        Number(torneoSeleccionado.juegoId) &&
+      puedeAdministrarEquipo(equipo)
+    )
+  })
+
   const inscritos = inscripciones.filter(
     (inscripcion) =>
       Number(inscripcion.torneoId) === Number(torneoId)
   ).length
 
-  // Calcular cupos disponibles
   const cuposDisponibles = torneoSeleccionado
     ? Math.max(
         0,
@@ -96,11 +108,15 @@ function ResumenInscripcionesApi() {
       )
     : 0
 
-  // CREAR INSCRIPCION
   async function confirmarInscripcion(evento) {
+
     evento.preventDefault()
 
-    setErrorFormulario('')
+    if (!autenticado || guardando) {
+      return
+    }
+
+    setError('')
     setMensaje('')
 
     const torneo = torneos.find(
@@ -111,110 +127,100 @@ function ResumenInscripcionesApi() {
       (item) => String(item.id) === equipoId
     )
 
-    // Validar torneo y equipo
     if (!torneo || !equipo) {
-      setErrorFormulario(
-        'Selecciona un torneo y un equipo.'
-      )
+      setError('Selecciona un torneo y un equipo.')
       return
     }
 
-    // Validar estado del torneo
+    if (!puedeAdministrarEquipo(equipo)) {
+      setError('No puedes inscribir un equipo ajeno.')
+      return
+    }
+
     const estadoTorneo = String(
       torneo.estado || ''
     ).toLowerCase()
 
-    if (estadoTorneo !== 'abierto' &&
-        estadoTorneo !== 'activo') {
-      setErrorFormulario(
-        'El torneo no está abierto para inscripciones.'
-      )
+    if (
+      estadoTorneo !== 'abierto' &&
+      estadoTorneo !== 'activo'
+    ) {
+      setError('El torneo no está abierto para inscripciones.')
       return
     }
 
-    // Validar fecha de cierre
     if (torneo.fechaCierre < obtenerFechaActual()) {
-      setErrorFormulario(
-        'El plazo de inscripción ya terminó.'
-      )
+      setError('El plazo de inscripción ya terminó.')
       return
     }
 
-    // Validar estado del equipo
     if (String(equipo.estado).toUpperCase() !== 'ACTIVO') {
-      setErrorFormulario(
-        'El equipo seleccionado no está activo.'
-      )
+      setError('El equipo seleccionado no está activo.')
       return
     }
 
-    // Validar videojuego
     if (Number(equipo.juegoId) !== Number(torneo.juegoId)) {
-      setErrorFormulario(
-        'El equipo no corresponde al juego del torneo.'
-      )
+      setError('El equipo no corresponde al juego del torneo.')
       return
     }
 
-    // Validar cupos
     if (cuposDisponibles <= 0) {
-      setErrorFormulario(
-        'El torneo ya no tiene cupos disponibles.'
-      )
+      setError('El torneo no tiene cupos disponibles.')
       return
     }
 
-    // Evitar inscripciones duplicadas
     const repetido = inscripciones.some(
-      (registro) =>
-        Number(registro.torneoId) === Number(torneoId) &&
-        Number(registro.equipoId) === Number(equipoId)
+      (inscripcion) =>
+        Number(inscripcion.torneoId) === Number(torneoId) &&
+        Number(inscripcion.equipoId) === Number(equipoId)
     )
 
     if (repetido) {
-      setErrorFormulario(
-        'Este equipo ya está inscrito en el torneo.'
-      )
+      setError('Este equipo ya está inscrito en el torneo.')
       return
     }
 
     try {
       setGuardando(true)
 
-      // Crear inscripción mediante Registration
-      const nuevaInscripcion =
-        await inscripcionesService.crear({
-          torneoId: Number(torneoId),
-          equipoId: Number(equipoId),
-          estado: 'ACTIVO'
-        })
+      const nueva = await inscripcionesService.crear({
+        torneoId: Number(torneoId),
+        equipoId: Number(equipoId),
+        estado: 'ACTIVO'
+      })
 
-      // Actualizar datos desde el servidor
-      const datosActualizados =
-        await inscripcionesService.listar()
+      const actualizadas = await inscripcionesService.listar()
+      setInscripciones(actualizadas)
 
-      setInscripciones(datosActualizados)
-
-      setMensaje(
-        `Inscripción N° ${nuevaInscripcion.id} ` +
-        'registrada correctamente en el servidor.'
-      )
-
-      // Limpiar equipo seleccionado
       setEquipoId('')
 
+      setMensaje(
+        `Inscripción N° ${nueva.id} registrada correctamente.`
+      )
+
     } catch (err) {
-      setErrorFormulario(err.message)
+      setError(err.message)
 
     } finally {
       setGuardando(false)
     }
   }
 
-  // CANCELAR INSCRIPCION
   async function cancelarInscripcion(inscripcion) {
 
-    // Solicitar confirmación
+    const equipo = equipos.find(
+      (item) => Number(item.id) === Number(inscripcion.equipoId)
+    )
+
+    if (!puedeAdministrarEquipo(equipo)) {
+      setError('No puedes cancelar una inscripción ajena.')
+      return
+    }
+
+    if (guardando || eliminandoId !== null) {
+      return
+    }
+
     const confirmar = window.confirm(
       `¿Deseas cancelar la inscripción N° ${inscripcion.id}?`
     )
@@ -223,31 +229,41 @@ function ResumenInscripcionesApi() {
       return
     }
 
-    setErrorFormulario('')
+    setError('')
     setMensaje('')
 
     try {
       setEliminandoId(inscripcion.id)
 
-      // Eliminar inscripción desde Registration
       await inscripcionesService.eliminar(inscripcion.id)
 
-      // Actualizar la lista desde el servidor
-      const datosActualizados =
-        await inscripcionesService.listar()
+      const actualizadas = await inscripcionesService.listar()
+      setInscripciones(actualizadas)
 
-      setInscripciones(datosActualizados)
-
-      setMensaje(
-        `Inscripción N° ${inscripcion.id} cancelada correctamente.`
-      )
+      setMensaje('Inscripción cancelada correctamente.')
 
     } catch (err) {
-      setErrorFormulario(err.message)
+      setError(err.message)
 
     } finally {
       setEliminandoId(null)
     }
+  }
+
+  function nombreTorneo(id) {
+
+    const torneo = torneos.find(
+      (item) => Number(item.id) === Number(id)
+    )
+
+    return torneo ? torneo.nombre : `Torneo ID ${id}`
+  }
+
+  function buscarEquipo(id) {
+
+    return equipos.find(
+      (item) => Number(item.id) === Number(id)
+    )
   }
 
   return (
@@ -260,40 +276,38 @@ function ResumenInscripcionesApi() {
         </h3>
 
         <p className="text-secondary">
-          Información obtenida desde Tournament, Team
-          y Registration mediante Gateway.
+          Cada jugador puede inscribir sus equipos
+          y cancelar sus propias inscripciones.
         </p>
 
-        {/* CARGANDO */}
-        {cargando && (
-          <div className="alert alert-info">
-            Cargando inscripciones del servidor...
-          </div>
-        )}
-
-        {/* ERROR DE CONEXION */}
         {error && (
-          <div className="alert alert-danger">
+          <div className="alert alert-danger" role="alert">
             {error}
           </div>
         )}
 
-        {!cargando && !error && (
+        {mensaje && (
+          <div className="alert alert-success" role="status">
+            {mensaje}
+          </div>
+        )}
+
+        {cargando && (
+          <div className="alert alert-info">
+            Cargando inscripciones...
+          </div>
+        )}
+
+        {!cargando && (
           <>
 
-            {/* RESUMEN */}
             <div className="row g-3 mb-4">
 
               <div className="col-12 col-md-4">
                 <div className="border rounded p-3">
 
-                  <p className="mb-1">
-                    Torneos
-                  </p>
-
-                  <h4 className="mb-0">
-                    {torneos.length}
-                  </h4>
+                  <p className="mb-1">Torneos</p>
+                  <h4 className="mb-0">{torneos.length}</h4>
 
                 </div>
               </div>
@@ -301,13 +315,8 @@ function ResumenInscripcionesApi() {
               <div className="col-12 col-md-4">
                 <div className="border rounded p-3">
 
-                  <p className="mb-1">
-                    Equipos
-                  </p>
-
-                  <h4 className="mb-0">
-                    {equipos.length}
-                  </h4>
+                  <p className="mb-1">Equipos</p>
+                  <h4 className="mb-0">{equipos.length}</h4>
 
                 </div>
               </div>
@@ -315,170 +324,137 @@ function ResumenInscripcionesApi() {
               <div className="col-12 col-md-4">
                 <div className="border rounded p-3">
 
-                  <p className="mb-1">
-                    Inscripciones
-                  </p>
-
-                  <h4 className="mb-0">
-                    {inscripciones.length}
-                  </h4>
+                  <p className="mb-1">Inscripciones</p>
+                  <h4 className="mb-0">{inscripciones.length}</h4>
 
                 </div>
               </div>
 
             </div>
 
-            {/* FORMULARIO EP3 */}
-            <div className="border rounded p-3 mb-4">
+            {autenticado ? (
 
-              <h4 className="h5 mb-3">
-                Nueva inscripción con API (EP3)
-              </h4>
+              <div className="border rounded p-3 mb-4 formulario-ep3">
 
-              <form onSubmit={confirmarInscripcion}>
+                <h4 className="h5 mb-3">
+                  Nueva inscripción con API (EP3)
+                </h4>
 
-                <div className="row g-3">
+                <form onSubmit={confirmarInscripcion}>
 
-                  {/* SELECCIONAR TORNEO */}
-                  <div className="col-12 col-md-6">
+                  <div className="row g-3">
 
-                    <label
-                      htmlFor="torneoApi"
-                      className="form-label"
-                    >
-                      Torneo
-                    </label>
+                    <div className="col-12 col-md-6">
 
-                    <select
-                      id="torneoApi"
-                      className="form-select"
-                      value={torneoId}
-                      onChange={(evento) => {
-                        setTorneoId(evento.target.value)
-                        setEquipoId('')
-                        setErrorFormulario('')
-                        setMensaje('')
-                      }}
-                      disabled={guardando || eliminandoId !== null}
-                    >
+                      <label htmlFor="torneoApi" className="form-label">
+                        Torneo
+                      </label>
 
-                      <option value="">
-                        Selecciona un torneo
-                      </option>
+                      <select
+                        id="torneoApi"
+                        className="form-select"
+                        value={torneoId}
+                        onChange={(evento) => {
+                          setTorneoId(evento.target.value)
+                          setEquipoId('')
+                          setError('')
+                          setMensaje('')
+                        }}
+                        disabled={guardando || eliminandoId !== null}
+                      >
 
-                      {torneos.map((torneo) => (
-                        <option
-                          key={torneo.id}
-                          value={torneo.id}
-                        >
-                          {torneo.nombre}
+                        <option value="">
+                          Selecciona un torneo
                         </option>
-                      ))}
 
-                    </select>
+                        {torneos.map((torneo) => (
+                          <option key={torneo.id} value={torneo.id}>
+                            {torneo.nombre}
+                          </option>
+                        ))}
 
-                  </div>
+                      </select>
 
-                  {/* SELECCIONAR EQUIPO */}
-                  <div className="col-12 col-md-6">
-
-                    <label
-                      htmlFor="equipoApi"
-                      className="form-label"
-                    >
-                      Equipo
-                    </label>
-
-                    <select
-                      id="equipoApi"
-                      className="form-select"
-                      value={equipoId}
-                      onChange={(evento) => {
-                        setEquipoId(evento.target.value)
-                        setErrorFormulario('')
-                        setMensaje('')
-                      }}
-                      disabled={
-                        !torneoSeleccionado ||
-                        guardando ||
-                        eliminandoId !== null
-                      }
-                    >
-
-                      <option value="">
-                        Selecciona un equipo
-                      </option>
-
-                      {equiposDelJuego.map((equipo) => (
-                        <option
-                          key={equipo.id}
-                          value={equipo.id}
-                        >
-                          {equipo.nombre}
-                        </option>
-                      ))}
-
-                    </select>
-
-                  </div>
-
-                </div>
-
-                {/* CUPOS */}
-                {torneoSeleccionado && (
-                  <p className="text-secondary mt-3 mb-0">
-                    Cupos disponibles: {cuposDisponibles}
-                  </p>
-                )}
-
-                {/* SIN EQUIPOS DISPONIBLES */}
-                {torneoSeleccionado &&
-                  equiposDelJuego.length === 0 && (
-                    <div className="alert alert-warning mt-3">
-                      No hay equipos registrados para
-                      este videojuego.
                     </div>
+
+                    <div className="col-12 col-md-6">
+
+                      <label htmlFor="equipoApi" className="form-label">
+                        Equipo
+                      </label>
+
+                      <select
+                        id="equipoApi"
+                        className="form-select"
+                        value={equipoId}
+                        onChange={(evento) => {
+                          setEquipoId(evento.target.value)
+                          setError('')
+                          setMensaje('')
+                        }}
+                        disabled={
+                          !torneoSeleccionado ||
+                          guardando ||
+                          eliminandoId !== null
+                        }
+                      >
+
+                        <option value="">
+                          Selecciona un equipo
+                        </option>
+
+                        {equiposDisponibles.map((equipo) => (
+                          <option key={equipo.id} value={equipo.id}>
+                            {equipo.nombre}
+                          </option>
+                        ))}
+
+                      </select>
+
+                    </div>
+
+                  </div>
+
+                  {torneoSeleccionado && (
+
+                    <p className="text-secondary mt-3 mb-0">
+                      Cupos disponibles: {cuposDisponibles}
+                    </p>
+
                   )}
 
-                {/* ERROR DEL FORMULARIO */}
-                {errorFormulario && (
-                  <div
-                    className="alert alert-danger mt-3"
-                    role="alert"
+                  {torneoSeleccionado &&
+                    equiposDisponibles.length === 0 && (
+
+                      <div className="alert alert-warning mt-3">
+                        No tienes equipos disponibles para
+                        este videojuego.
+                      </div>
+
+                    )}
+
+                  <button
+                    type="submit"
+                    className="btn btn-primary mt-3"
+                    disabled={guardando || eliminandoId !== null}
                   >
-                    {errorFormulario}
-                  </div>
-                )}
+                    {guardando
+                      ? 'Guardando inscripción...'
+                      : 'Inscribir equipo en el servidor'}
+                  </button>
 
-                {/* MENSAJE DE CONFIRMACION */}
-                {mensaje && (
-                  <div
-                    className="alert alert-success mt-3"
-                    role="status"
-                  >
-                    {mensaje}
-                  </div>
-                )}
+                </form>
 
-                {/* BOTON INSCRIBIR */}
-                <button
-                  type="submit"
-                  className="btn btn-primary mt-3"
-                  disabled={
-                    guardando ||
-                    eliminandoId !== null
-                  }
-                >
-                  {guardando
-                    ? 'Guardando inscripción...'
-                    : 'Inscribir equipo en el servidor'}
-                </button>
+              </div>
 
-              </form>
+            ) : (
 
-            </div>
+              <div className="alert alert-info">
+                Inicia sesión para inscribir un equipo.
+              </div>
 
-            {/* LISTADO */}
+            )}
+
             <h4 className="h5 mb-3">
               Listado de inscripciones del servidor
             </h4>
@@ -486,8 +462,7 @@ function ResumenInscripcionesApi() {
             {inscripciones.length === 0 ? (
 
               <div className="alert alert-info">
-                No hay inscripciones registradas
-                en el servidor.
+                No hay inscripciones registradas.
               </div>
 
             ) : (
@@ -510,32 +485,14 @@ function ResumenInscripcionesApi() {
 
                     {inscripciones.map((inscripcion) => {
 
-                      // Buscar nombre del torneo
-                      const torneo = torneos.find(
-                        (item) =>
-                          Number(item.id) ===
-                          Number(inscripcion.torneoId)
-                      )
-
-                      // Buscar nombre del equipo
-                      const equipo = equipos.find(
-                        (item) =>
-                          Number(item.id) ===
-                          Number(inscripcion.equipoId)
-                      )
+                      const equipo = buscarEquipo(inscripcion.equipoId)
 
                       return (
                         <tr key={inscripcion.id}>
 
-                          <td>
-                            {inscripcion.id}
-                          </td>
+                          <td>{inscripcion.id}</td>
 
-                          <td>
-                            {torneo
-                              ? torneo.nombre
-                              : `Torneo ID ${inscripcion.torneoId}`}
-                          </td>
+                          <td>{nombreTorneo(inscripcion.torneoId)}</td>
 
                           <td>
                             {equipo
@@ -543,28 +500,30 @@ function ResumenInscripcionesApi() {
                               : `Equipo ID ${inscripcion.equipoId}`}
                           </td>
 
-                          <td>
-                            {inscripcion.estado}
-                          </td>
+                          <td>{inscripcion.estado}</td>
 
-                          {/* BOTON CANCELAR */}
                           <td>
 
-                            <button
-                              type="button"
-                              className="btn btn-outline-danger btn-sm"
-                              onClick={() =>
-                                cancelarInscripcion(inscripcion)
-                              }
-                              disabled={
-                                guardando ||
-                                eliminandoId !== null
-                              }
-                            >
-                              {eliminandoId === inscripcion.id
-                                ? 'Cancelando...'
-                                : 'Cancelar'}
-                            </button>
+                            {puedeAdministrarEquipo(equipo) ? (
+
+                              <button
+                                type="button"
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => cancelarInscripcion(inscripcion)}
+                                disabled={guardando || eliminandoId !== null}
+                              >
+                                {eliminandoId === inscripcion.id
+                                  ? 'Cancelando...'
+                                  : 'Cancelar'}
+                              </button>
+
+                            ) : (
+
+                              <span className="text-secondary">
+                                Solo consulta
+                              </span>
+
+                            )}
 
                           </td>
 

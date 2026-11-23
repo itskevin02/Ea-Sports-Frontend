@@ -136,7 +136,7 @@ export const Torneos = ({ onVerDetalle }) => {
       </h2>
 
       {/* FILTROS DE BUSQUEDA */}
-      <div className="card mb-4">
+      <div className="card mb-4 formulario-ep3">
         <div className="card-body">
 
           <h3 className="h5 mb-3">

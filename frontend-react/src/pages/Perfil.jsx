@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { usuariosService } from '../services/usuarios'
 
+import CompletarPerfil from '../components/CompletarPerfil'
 import PerfilEp2 from './PerfilEp2'
 
 function Perfil() {
@@ -12,18 +13,18 @@ function Perfil() {
 
   const [perfil, setPerfil] = useState(null)
   const [cargando, setCargando] = useState(false)
+  const [sinPerfil, setSinPerfil] = useState(false)
   const [error, setError] = useState('')
 
   const [mostrarAnterior, setMostrarAnterior] = useState(false)
 
-  // Consultar el perfil real desde User
   useEffect(() => {
 
     let activo = true
 
     setPerfil(null)
+    setSinPerfil(false)
     setError('')
-    setCargando(false)
 
     if (!usuario?.authId) {
       return
@@ -33,25 +34,25 @@ function Perfil() {
 
     usuariosService.miPerfil()
       .then((datos) => {
-
         if (activo) {
           setPerfil(datos)
         }
-
       })
       .catch((err) => {
-
         if (activo) {
-          setError(err.message)
-        }
 
+          if (err.status === 404) {
+            setSinPerfil(true)
+
+          } else {
+            setError(err.message)
+          }
+        }
       })
       .finally(() => {
-
         if (activo) {
           setCargando(false)
         }
-
       })
 
     return () => {
@@ -59,6 +60,12 @@ function Perfil() {
     }
 
   }, [usuario?.authId])
+
+  function perfilCompletado(datos) {
+    setPerfil(datos)
+    setSinPerfil(false)
+    setError('')
+  }
 
   return (
     <div>
@@ -72,7 +79,7 @@ function Perfil() {
         en eSports Arena Manager.
       </p>
 
-      {/* CUENTA DE AUTH */}
+      {/* DATOS DE AUTH */}
       <div className="card bg-dark text-white border-secondary mb-4">
 
         <div className="card-body p-4">
@@ -84,7 +91,6 @@ function Perfil() {
           <div className="row g-3">
 
             <div className="col-12 col-md-6">
-
               <div className="border border-secondary rounded-3 p-3">
 
                 <p className="text-white-50 mb-2">
@@ -96,11 +102,9 @@ function Perfil() {
                 </h4>
 
               </div>
-
             </div>
 
             <div className="col-12 col-md-6">
-
               <div className="border border-secondary rounded-3 p-3">
 
                 <p className="text-white-50 mb-2">
@@ -112,7 +116,6 @@ function Perfil() {
                 </h4>
 
               </div>
-
             </div>
 
           </div>
@@ -125,7 +128,7 @@ function Perfil() {
 
       </div>
 
-      {/* PERFIL VINCULADO DESDE USER */}
+      {/* PERFIL DE USER */}
       <div className="card bg-dark text-white border-secondary mb-4">
 
         <div className="card-body p-4">
@@ -136,30 +139,25 @@ function Perfil() {
 
           {!usuario?.authId ? (
 
-            <div className="alert alert-warning mb-0">
-              Tu sesión no contiene el identificador de Auth.
-              Cierra sesión y vuelve a iniciar sesión.
+            <div className="alert alert-warning">
+              Tu sesión no contiene authId.
+              Cierra sesión y vuelve a ingresar.
             </div>
 
           ) : cargando ? (
 
-            <p className="text-white-50 mb-0">
-              Cargando perfil del servidor...
-            </p>
+            <div className="alert alert-info">
+              Cargando perfil...
+            </div>
+
+          ) : sinPerfil && usuario?.rol === 'USUARIO' ? (
+
+            <CompletarPerfil onCompletado={perfilCompletado} />
 
           ) : error ? (
 
-            <div className="alert alert-info mb-0">
-
-              <p className="mb-2">
-                No se pudo cargar el perfil: {error}
-              </p>
-
-              <p className="mb-0">
-                Si todavía no tienes un perfil vinculado,
-                un administrador debe asociarlo con tu cuenta.
-              </p>
-
+            <div className="alert alert-danger">
+              No se pudo cargar el perfil: {error}
             </div>
 
           ) : perfil ? (
@@ -167,7 +165,6 @@ function Perfil() {
             <div className="row g-3">
 
               <div className="col-12 col-md-6">
-
                 <div className="border border-secondary rounded-3 p-3">
 
                   <p className="text-white-50 mb-2">
@@ -179,11 +176,9 @@ function Perfil() {
                   </p>
 
                 </div>
-
               </div>
 
               <div className="col-12 col-md-6">
-
                 <div className="border border-secondary rounded-3 p-3">
 
                   <p className="text-white-50 mb-2">
@@ -195,11 +190,9 @@ function Perfil() {
                   </p>
 
                 </div>
-
               </div>
 
               <div className="col-12 col-md-6">
-
                 <div className="border border-secondary rounded-3 p-3">
 
                   <p className="text-white-50 mb-2">
@@ -211,11 +204,9 @@ function Perfil() {
                   </p>
 
                 </div>
-
               </div>
 
               <div className="col-12 col-md-6">
-
                 <div className="border border-secondary rounded-3 p-3">
 
                   <p className="text-white-50 mb-2">
@@ -227,16 +218,15 @@ function Perfil() {
                   </p>
 
                 </div>
-
               </div>
 
             </div>
 
           ) : (
 
-            <p className="text-white-50 mb-0">
-              No hay información de perfil para mostrar.
-            </p>
+            <div className="alert alert-info">
+              No hay un perfil vinculado a esta cuenta.
+            </div>
 
           )}
 
@@ -244,7 +234,7 @@ function Perfil() {
 
       </div>
 
-      {/* VERSION ANTERIOR DE EP2 */}
+      {/* DATOS ANTERIORES DE EP2 */}
       {usuario?.rol === 'ADMIN' && (
 
         <div className="card bg-dark text-white border-secondary mb-4">
