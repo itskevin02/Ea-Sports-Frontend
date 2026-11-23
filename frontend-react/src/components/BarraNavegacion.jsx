@@ -23,12 +23,23 @@ function BarraNavegacion({
       { id: 'perfil', nombre: 'Perfil' }
   )
 
-    if (usuario?.rol === 'ADMIN') {
-      secciones.push({
-        id: 'administracion',
-        nombre: 'Administración'
-      })
-    }
+  if (
+    usuario?.rol === 'ADMIN' ||
+    usuario?.rol === 'ORGANIZADOR'
+  ) {
+    secciones.push({
+      id: 'organizador',
+      nombre: 'Organizador'
+    })
+  }
+
+  if (usuario?.rol === 'ADMIN') {
+    secciones.push({
+      id: 'administracion',
+      nombre: 'Administración'
+    })
+  }
+
   } else {
     secciones.push({
       id: 'login',
