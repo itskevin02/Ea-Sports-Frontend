@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 
 import { juegosService } from '../services/juegos'
@@ -27,7 +26,8 @@ const formularioVacio = {
   genero: '',
   modalidad: '',
   jugadoresPorEquipo: '',
-  estado: 'ACTIVO'
+  estado: 'ACTIVO',
+  imagen: ''
 }
 
 function Juegos() {
@@ -44,7 +44,6 @@ function Juegos() {
   })
 
   const [editandoId, setEditandoId] = useState(null)
-
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
 
@@ -57,7 +56,6 @@ function Juegos() {
         setError('')
 
         const datos = await juegosService.listar()
-
         setJuegos(datos)
 
       } catch (err) {
@@ -103,7 +101,8 @@ function Juegos() {
       genero: juego.genero,
       modalidad: juego.modalidad,
       jugadoresPorEquipo: String(juego.jugadoresPorEquipo),
-      estado: juego.estado
+      estado: juego.estado,
+      imagen: juego.imagen || ''
     })
 
     setError('')
@@ -123,6 +122,7 @@ function Juegos() {
 
     const nombre = formulario.nombre.trim()
     const cantidad = Number(formulario.jugadoresPorEquipo)
+    const imagen = formulario.imagen.trim()
 
     if (
       !nombre ||
@@ -141,12 +141,27 @@ function Juegos() {
       return
     }
 
+    if (
+      imagen &&
+      !imagen.startsWith('https://') &&
+      !imagen.startsWith('http://')
+    ) {
+      setError('La imagen debe tener una URL http:// o https://.')
+      return
+    }
+
+    if (imagen.length > 1000) {
+      setError('La URL de imagen es demasiado larga.')
+      return
+    }
+
     const datosJuego = {
       nombre: nombre,
       genero: formulario.genero,
       modalidad: formulario.modalidad,
       jugadoresPorEquipo: cantidad,
-      estado: formulario.estado
+      estado: formulario.estado,
+      imagen: imagen
     }
 
     try {
@@ -231,7 +246,6 @@ function Juegos() {
       {esAdmin && (
 
         <div className="card bg-dark text-white border-secondary mb-4">
-
           <div className="card-body">
 
             <h3 className="h5 mb-3">
@@ -241,7 +255,6 @@ function Juegos() {
             </h3>
 
             <form onSubmit={guardarJuego} noValidate>
-
               <div className="row g-3">
 
                 {/* NOMBRE */}
@@ -262,7 +275,7 @@ function Juegos() {
 
                 </div>
 
-                {/* GÉNERO */}
+                {/* GENERO */}
                 <div className="col-12 col-md-6">
 
                   <label htmlFor="generoJuego" className="form-label">
@@ -276,6 +289,7 @@ function Juegos() {
                     value={formulario.genero}
                     onChange={cambiarCampo}
                   >
+
                     <option value="">
                       Selecciona un género
                     </option>
@@ -292,6 +306,7 @@ function Juegos() {
                         {genero}
                       </option>
                     ))}
+
                   </select>
 
                 </div>
@@ -310,6 +325,7 @@ function Juegos() {
                     value={formulario.modalidad}
                     onChange={cambiarCampo}
                   >
+
                     <option value="">
                       Selecciona una modalidad
                     </option>
@@ -326,11 +342,12 @@ function Juegos() {
                         {modalidad}
                       </option>
                     ))}
+
                   </select>
 
                 </div>
 
-                {/* JUGADORES */}
+                {/* JUGADORES POR EQUIPO */}
                 <div className="col-12 col-md-3">
 
                   <label htmlFor="jugadoresJuego" className="form-label">
@@ -364,6 +381,7 @@ function Juegos() {
                     value={formulario.estado}
                     onChange={cambiarCampo}
                   >
+
                     <option value="ACTIVO">
                       Activo
                     </option>
@@ -371,7 +389,52 @@ function Juegos() {
                     <option value="INACTIVO">
                       Inactivo
                     </option>
+
                   </select>
+
+                </div>
+
+                {/* IMAGEN POR URL */}
+                <div className="col-12">
+
+                  <label htmlFor="imagenJuego" className="form-label">
+                    URL de imagen (opcional)
+                  </label>
+
+                  <input
+                    id="imagenJuego"
+                    name="imagen"
+                    type="url"
+                    className="form-control"
+                    placeholder="https://ejemplo.com/juego.jpg"
+                    value={formulario.imagen}
+                    onChange={cambiarCampo}
+                  />
+
+                  <small className="text-white-50">
+                    Utiliza una URL pública de imagen JPG, PNG o WebP.
+                  </small>
+
+                  {formulario.imagen.startsWith('http') && (
+                    <div className="mt-3">
+
+                      <p className="mb-2">
+                        Vista previa de la imagen
+                      </p>
+
+                      <img
+                        src={formulario.imagen}
+                        alt="Vista previa del videojuego"
+                        className="img-fluid rounded"
+                        style={{
+                          width: '300px',
+                          maxHeight: '180px',
+                          objectFit: 'cover'
+                        }}
+                      />
+
+                    </div>
+                  )}
 
                 </div>
 
@@ -406,11 +469,9 @@ function Juegos() {
                 </div>
 
               </div>
-
             </form>
 
           </div>
-
         </div>
       )}
 
@@ -439,7 +500,7 @@ function Juegos() {
         </div>
       )}
 
-      {/* LISTADO */}
+      {/* LISTADO DE VIDEOJUEGOS */}
       {!cargando && juegos.length > 0 && (
 
         <div className="row g-3">
@@ -452,6 +513,27 @@ function Juegos() {
             >
 
               <div className="card bg-dark text-white border-secondary h-100">
+
+                {/* IMAGEN */}
+                {juego.imagen ? (
+                  <img
+                    src={juego.imagen}
+                    className="card-img-top"
+                    alt={juego.nombre}
+                    style={{
+                      height: '180px',
+                      width: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="bg-secondary text-white d-flex align-items-center justify-content-center"
+                    style={{ height: '180px' }}
+                  >
+                    Imagen no disponible
+                  </div>
+                )}
 
                 <div className="card-body">
 
