@@ -6,15 +6,20 @@ import { equiposService } from '../services/equipos'
 import { inscripcionesService } from '../services/inscripciones'
 import { partidasService } from '../services/partidas'
 import { resultadosService } from '../services/resultados'
+import { rankingsService } from '../services/rankings'
+import { premiosService } from '../services/premios'
 
 function DetalleTorneoApi({ torneoId, onVolver }) {
 
   const [torneo, setTorneo] = useState(null)
   const [nombreJuego, setNombreJuego] = useState('')
+
   const [equipos, setEquipos] = useState([])
   const [inscripciones, setInscripciones] = useState([])
   const [partidas, setPartidas] = useState([])
   const [resultados, setResultados] = useState([])
+  const [rankings, setRankings] = useState([])
+  const [premios, setPremios] = useState([])
 
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -31,7 +36,8 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
         setError('')
         setAviso('')
 
-        const datosTorneo = await torneosService.obtener(torneoId)
+        const datosTorneo =
+          await torneosService.obtener(torneoId)
 
         if (!datosTorneo) {
           throw new Error('No se encontró el torneo.')
@@ -42,7 +48,9 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
           equiposService.listar(),
           inscripcionesService.listar(),
           partidasService.listar(),
-          resultadosService.listar()
+          resultadosService.listar(),
+          rankingsService.listar(),
+          premiosService.listar()
         ])
 
         if (!activo) return
@@ -79,12 +87,24 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
             : []
         )
 
+        setRankings(
+          respuestas[5].status === 'fulfilled'
+            ? respuestas[5].value
+            : []
+        )
+
+        setPremios(
+          respuestas[6].status === 'fulfilled'
+            ? respuestas[6].value
+            : []
+        )
+
         if (respuestas.some(
           (respuesta) => respuesta.status === 'rejected'
         )) {
           setAviso(
             'Algunos datos no están disponibles. ' +
-            'Comprueba que los microservicios estén iniciados.'
+            'Revisa los microservicios.'
           )
         }
 
@@ -116,7 +136,9 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
       (item) => Number(item.id) === Number(id)
     )
 
-    return equipo ? equipo.nombre : `Equipo ID ${id}`
+    return equipo
+      ? equipo.nombre
+      : `Equipo ID ${id}`
   }
 
   const inscripcionesTorneo = inscripciones.filter(
@@ -126,6 +148,22 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
   const partidasTorneo = partidas.filter(
     (item) => Number(item.torneoId) === Number(torneoId)
   )
+
+  const rankingsTorneo = rankings
+    .filter(
+      (item) => Number(item.torneoId) === Number(torneoId)
+    )
+    .sort(
+      (a, b) => Number(a.posicion) - Number(b.posicion)
+    )
+
+  const premiosTorneo = premios
+    .filter(
+      (item) => Number(item.torneoId) === Number(torneoId)
+    )
+    .sort(
+      (a, b) => Number(a.posicion) - Number(b.posicion)
+    )
 
   function buscarResultado(idPartida) {
 
@@ -164,7 +202,7 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
   return (
     <div>
 
-      <h2 className="mb-4">
+      <h2 className="mb-4 text-center">
         Detalle del Torneo
       </h2>
 
@@ -174,10 +212,9 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
         </div>
       )}
 
-      {/* INFORMACIÓN GENERAL */}
+      {/* INFORMACIÓN DEL TORNEO */}
 
       <section className="card mb-4">
-
         <div className="card-body p-4">
 
           <h3 className="h4 mb-3">
@@ -233,13 +270,11 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
           <p>{torneo.descripcion}</p>
 
         </div>
-
       </section>
 
       {/* EQUIPOS INSCRITOS */}
 
       <section className="card mb-4">
-
         <div className="card-body p-4">
 
           <h3 className="h5 mb-3">
@@ -247,52 +282,37 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
           </h3>
 
           {inscripcionesTorneo.length === 0 ? (
-
             <p>No hay equipos inscritos.</p>
-
           ) : (
-
             <div className="table-responsive">
-
               <table className="table table-striped align-middle">
 
                 <thead>
                   <tr>
                     <th>Equipo</th>
-                    <th>Estado de inscripción</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
 
                 <tbody>
-
-                  {inscripcionesTorneo.map((inscripcion) => (
-                    <tr key={inscripcion.id}>
-
-                      <td>
-                        {nombreEquipo(inscripcion.equipoId)}
-                      </td>
-
-                      <td>{inscripcion.estado}</td>
-
+                  {inscripcionesTorneo.map((item) => (
+                    <tr key={item.id}>
+                      <td>{nombreEquipo(item.equipoId)}</td>
+                      <td>{item.estado}</td>
                     </tr>
                   ))}
-
                 </tbody>
 
               </table>
-
             </div>
-
           )}
 
         </div>
-
       </section>
 
-      {/* PARTIDAS DEL TORNEO */}
+      {/* PARTIDAS */}
 
       <section className="card mb-4">
-
         <div className="card-body p-4">
 
           <h3 className="h5 mb-3">
@@ -300,13 +320,9 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
           </h3>
 
           {partidasTorneo.length === 0 ? (
-
-            <p>Todavía no hay partidas programadas.</p>
-
+            <p>No hay partidas programadas.</p>
           ) : (
-
             <div className="table-responsive">
-
               <table className="table table-striped align-middle">
 
                 <thead>
@@ -319,41 +335,26 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
                 </thead>
 
                 <tbody>
-
                   {partidasTorneo.map((partida) => (
                     <tr key={partida.id}>
-
                       <td>{partida.ronda}</td>
-
-                      <td>
-                        {nombreEquipo(partida.participanteAId)}
-                      </td>
-
-                      <td>
-                        {nombreEquipo(partida.participanteBId)}
-                      </td>
-
+                      <td>{nombreEquipo(partida.participanteAId)}</td>
+                      <td>{nombreEquipo(partida.participanteBId)}</td>
                       <td>{partida.estado}</td>
-
                     </tr>
                   ))}
-
                 </tbody>
 
               </table>
-
             </div>
-
           )}
 
         </div>
-
       </section>
 
-      {/* RESULTADOS DEL TORNEO */}
+      {/* RESULTADOS */}
 
       <section className="card mb-4">
-
         <div className="card-body p-4">
 
           <h3 className="h5 mb-3">
@@ -361,13 +362,9 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
           </h3>
 
           {partidasTorneo.length === 0 ? (
-
             <p>No hay resultados disponibles.</p>
-
           ) : (
-
             <div className="table-responsive">
-
               <table className="table table-striped align-middle">
 
                 <thead>
@@ -380,14 +377,12 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
                 </thead>
 
                 <tbody>
-
                   {partidasTorneo.map((partida) => {
 
                     const resultado = buscarResultado(partida.id)
 
                     return (
                       <tr key={partida.id}>
-
                         <td>
                           {nombreEquipo(partida.participanteAId)}
                           {' vs '}
@@ -411,25 +406,107 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
                             ? resultado.estadoValidacion
                             : 'Sin resultado'}
                         </td>
-
                       </tr>
                     )
                   })}
-
                 </tbody>
 
               </table>
-
             </div>
-
           )}
 
         </div>
+      </section>
 
+      {/* RANKING */}
+
+      <section className="card mb-4">
+        <div className="card-body p-4">
+
+          <h3 className="h5 mb-3">
+            Clasificación del torneo
+          </h3>
+
+          <p className="text-secondary">
+            Clasificación registrada por la organización.
+          </p>
+
+          {rankingsTorneo.length === 0 ? (
+            <p>No hay clasificaciones registradas.</p>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-striped align-middle">
+
+                <thead>
+                  <tr>
+                    <th>Posición</th>
+                    <th>Equipo</th>
+                    <th>Puntos</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {rankingsTorneo.map((ranking) => (
+                    <tr key={ranking.id}>
+                      <td>{ranking.posicion}</td>
+                      <td>{ranking.nombreEquipo}</td>
+                      <td>{ranking.puntos}</td>
+                      <td>{ranking.estado}</td>
+                    </tr>
+                  ))}
+                </tbody>
+
+              </table>
+            </div>
+          )}
+
+        </div>
+      </section>
+
+      {/* PREMIOS */}
+
+      <section className="card mb-4">
+        <div className="card-body p-4">
+
+          <h3 className="h5 mb-3">
+            Premios del torneo
+          </h3>
+
+          {premiosTorneo.length === 0 ? (
+            <p>No hay premios registrados.</p>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-striped align-middle">
+
+                <thead>
+                  <tr>
+                    <th>Posición</th>
+                    <th>Descripción</th>
+                    <th>Valor</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {premiosTorneo.map((premio) => (
+                    <tr key={premio.id}>
+                      <td>{premio.posicion}</td>
+                      <td>{premio.descripcion}</td>
+                      <td>{premio.valor}</td>
+                      <td>{premio.estado}</td>
+                    </tr>
+                  ))}
+                </tbody>
+
+              </table>
+            </div>
+          )}
+
+        </div>
       </section>
 
       <div className="text-center mt-4">
-
         <button
           type="button"
           className="btn btn-outline-light"
@@ -437,7 +514,6 @@ function DetalleTorneoApi({ torneoId, onVolver }) {
         >
           Volver a Torneos
         </button>
-
       </div>
 
     </div>
