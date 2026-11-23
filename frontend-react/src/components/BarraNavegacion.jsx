@@ -14,15 +14,14 @@ function BarraNavegacion({
   const secciones = [
     { id: 'inicio', nombre: 'Inicio' },
     { id: 'torneos', nombre: 'Torneos' },
-    { id: 'juegos', nombre: 'Juegos' }
+    { id: 'juegos', nombre: 'Juegos' },
+    { id: 'equipos', nombre: 'Equipos' }
   ]
-
   if (autenticado) {
     secciones.push(
       { id: 'inscripcion', nombre: 'Inscripción' },
-      { id: 'equipos', nombre: 'Equipos' },
       { id: 'perfil', nombre: 'Perfil' }
-    )
+  )
 
     if (usuario?.rol === 'ADMIN') {
       secciones.push({

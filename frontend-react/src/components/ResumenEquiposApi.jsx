@@ -1,65 +1,76 @@
+import { useEffect, useState } from 'react'
 
-import { useState, useEffect } from 'react'
-
+import { useAuth } from '../auth/useAuth'
 import { equiposService } from '../services/equipos'
 import { juegosService } from '../services/juegos'
 import { inscripcionesService } from '../services/inscripciones'
 
+const formularioVacio = {
+  nombre: '',
+  coach: '',
+  juegoId: '',
+  estado: 'ACTIVO'
+}
+
 function ResumenEquiposApi() {
 
-  // Datos del servidor
+  const { usuario } = useAuth()
+
+  const esAdmin = usuario?.rol === 'ADMIN'
+  const puedeCrear = Boolean(usuario?.authId)
+
   const [equipos, setEquipos] = useState([])
   const [juegos, setJuegos] = useState([])
 
-  // Estados de carga
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState('')
-
-  // Datos del formulario
   const [formulario, setFormulario] = useState({
-    nombre: '',
-    coach: '',
-    juegoId: '',
-    estado: 'ACTIVO'
+    ...formularioVacio
   })
 
-  // Estados para crear, editar y eliminar
   const [editandoId, setEditandoId] = useState(null)
+  const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [eliminandoId, setEliminandoId] = useState(null)
 
-  // Mensajes
+  const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
-  const [errorFormulario, setErrorFormulario] = useState('')
 
-  // Cargar los equipos y juegos desde Gateway
-  useEffect(() => {
+  function esPropietario(equipo) {
 
-    async function cargarDatos() {
+    return (
+      usuario?.authId != null &&
+      equipo.authId != null &&
+      Number(usuario.authId) === Number(equipo.authId)
+    )
+  }
 
-      try {
-        setCargando(true)
-        setError('')
+  function puedeAdministrar(equipo) {
+    return esAdmin || esPropietario(equipo)
+  }
 
-        const datosEquipos = await equiposService.listar()
-        const datosJuegos = await juegosService.listar()
+  async function cargarDatos() {
 
-        setEquipos(datosEquipos)
-        setJuegos(datosJuegos)
+    try {
+      setCargando(true)
+      setError('')
 
-      } catch (err) {
-        setError(err.message)
+      const datosEquipos = await equiposService.listar()
+      const datosJuegos = await juegosService.listar()
 
-      } finally {
-        setCargando(false)
-      }
+      setEquipos(datosEquipos)
+      setJuegos(datosJuegos)
+
+    } catch (err) {
+      setError(err.message)
+
+    } finally {
+      setCargando(false)
     }
+  }
 
+  useEffect(() => {
     cargarDatos()
-
   }, [])
 
-  // Cambiar los campos del formulario
   function cambiarCampo(evento) {
 
     const { name, value } = evento.target
@@ -69,25 +80,21 @@ function ResumenEquiposApi() {
       [name]: value
     })
 
-    setErrorFormulario('')
+    setError('')
     setMensaje('')
   }
 
-  // Limpiar el formulario
   function limpiarFormulario() {
-
-    setFormulario({
-      nombre: '',
-      coach: '',
-      juegoId: '',
-      estado: 'ACTIVO'
-    })
-
+    setFormulario({ ...formularioVacio })
     setEditandoId(null)
   }
 
-  // Seleccionar equipo para editar
   function iniciarEdicion(equipo) {
+
+    if (!puedeAdministrar(equipo)) {
+      setError('No puedes editar un equipo ajeno.')
+      return
+    }
 
     setEditandoId(equipo.id)
 
@@ -98,116 +105,102 @@ function ResumenEquiposApi() {
       estado: equipo.estado
     })
 
-    setErrorFormulario('')
+    setError('')
     setMensaje('')
   }
 
-  // Cancelar la edición
-  function cancelarEdicion() {
-
-    limpiarFormulario()
-    setErrorFormulario('')
-    setMensaje('')
-  }
-
-  // Crear o editar equipo
   async function guardarEquipo(evento) {
 
     evento.preventDefault()
 
-    setErrorFormulario('')
+    if (!puedeCrear || guardando) {
+      return
+    }
+
+    setError('')
     setMensaje('')
 
     const nombre = formulario.nombre.trim()
     const coach = formulario.coach.trim()
+    const juegoId = Number(formulario.juegoId)
 
-    // Validar nombre
-    if (nombre === '') {
-      setErrorFormulario(
-        'El nombre del equipo es obligatorio.'
-      )
+    if (!nombre || !coach || !formulario.juegoId) {
+      setError('Debes completar todos los campos obligatorios.')
       return
     }
 
-    // Validar coach
-    if (coach === '') {
-      setErrorFormulario(
-        'El coach del equipo es obligatorio.'
-      )
+    const juegoExiste = juegos.some(
+      (juego) => Number(juego.id) === juegoId
+    )
+
+    if (!juegoExiste) {
+      setError('Selecciona un videojuego válido.')
       return
     }
 
-    // Validar videojuego
-    if (formulario.juegoId === '') {
-      setErrorFormulario(
-        'Debes seleccionar un videojuego.'
-      )
-      return
-    }
-
-    // Evitar nombres repetidos
-    const nombreRepetido = equipos.some(
+    const repetido = equipos.some(
       (equipo) =>
         equipo.nombre.toLowerCase() === nombre.toLowerCase() &&
         Number(equipo.id) !== Number(editandoId)
     )
 
-    if (nombreRepetido) {
-      setErrorFormulario(
-        'Ya existe un equipo con ese nombre.'
-      )
+    if (repetido) {
+      setError('Ya existe un equipo con ese nombre.')
       return
     }
 
-    // Preparar los datos para Team
-    const datosEquipo = {
+    if (editandoId !== null) {
+
+      const equipoActual = equipos.find(
+        (equipo) => Number(equipo.id) === Number(editandoId)
+      )
+
+      if (!equipoActual || !puedeAdministrar(equipoActual)) {
+        setError('No tienes permiso para editar este equipo.')
+        return
+      }
+    }
+
+    const datos = {
       nombre: nombre,
       coach: coach,
-      juegoId: Number(formulario.juegoId),
+      juegoId: juegoId,
       estado: formulario.estado
     }
 
     try {
       setGuardando(true)
 
-      if (editandoId !== null) {
+      if (editandoId === null) {
 
-        // Actualizar equipo
-        await equiposService.actualizar(
-          editandoId,
-          datosEquipo
-        )
-
-        setMensaje(
-          `Equipo "${nombre}" actualizado correctamente.`
-        )
+        await equiposService.crear(datos)
+        setMensaje('Equipo creado correctamente.')
 
       } else {
 
-        // Crear equipo
-        await equiposService.crear(datosEquipo)
-
-        setMensaje(
-          `Equipo "${nombre}" creado correctamente en el servidor.`
-        )
+        await equiposService.actualizar(editandoId, datos)
+        setMensaje('Equipo actualizado correctamente.')
       }
 
-      // Consultar nuevamente los equipos
-      const datosActualizados = await equiposService.listar()
+      const actualizados = await equiposService.listar()
+      setEquipos(actualizados)
 
-      setEquipos(datosActualizados)
       limpiarFormulario()
 
     } catch (err) {
-      setErrorFormulario(err.message)
+      setError(err.message)
 
     } finally {
       setGuardando(false)
     }
   }
 
-  // Eliminar equipo desde el servidor
   async function eliminarEquipo(equipo) {
+
+    if (!puedeAdministrar(equipo)) {
+      setError('No puedes eliminar un equipo ajeno.')
+      return
+    }
 
     if (guardando || eliminandoId !== null) {
       return
@@ -221,52 +214,53 @@ function ResumenEquiposApi() {
       return
     }
 
-    setErrorFormulario('')
+    setError('')
     setMensaje('')
 
     try {
       setEliminandoId(equipo.id)
 
-      // Consultar inscripciones existentes
       const inscripciones = await inscripcionesService.listar()
 
-      // Verificar si tiene inscripciones
       const tieneInscripciones = inscripciones.some(
         (inscripcion) =>
           Number(inscripcion.equipoId) === Number(equipo.id)
       )
 
       if (tieneInscripciones) {
-        setErrorFormulario(
-          'No puedes eliminar este equipo porque tiene ' +
-          'inscripciones registradas. Primero debes cancelarlas.'
+        setError(
+          'Este equipo tiene inscripciones. ' +
+          'Debes cancelarlas antes de eliminarlo.'
         )
         return
       }
 
-      // Eliminar mediante Team
       await equiposService.eliminar(equipo.id)
 
-      // Actualizar listado
-      const datosActualizados = await equiposService.listar()
+      const actualizados = await equiposService.listar()
+      setEquipos(actualizados)
 
-      setEquipos(datosActualizados)
-
-      // Limpiar si era el equipo seleccionado
       if (Number(editandoId) === Number(equipo.id)) {
         limpiarFormulario()
       }
 
-      setMensaje(
-        `Equipo "${equipo.nombre}" eliminado correctamente.`
-      )
+      setMensaje('Equipo eliminado correctamente.')
 
     } catch (err) {
-      setErrorFormulario(err.message)
+      setError(err.message)
 
     } finally {
       setEliminandoId(null)
     }
+  }
+
+  function nombreJuego(juegoId) {
+
+    const juego = juegos.find(
+      (item) => Number(item.id) === Number(juegoId)
+    )
+
+    return juego ? juego.nombre : `Juego ID ${juegoId}`
   }
 
   return (
@@ -279,27 +273,31 @@ function ResumenEquiposApi() {
         </h3>
 
         <p className="text-secondary mb-4">
-          Información obtenida desde Team y Game mediante Gateway.
+          Consulta los equipos disponibles. Cada jugador
+          puede administrar solamente sus propios equipos.
         </p>
 
-        {/* ESTADO DE CARGA */}
-        {cargando && (
-          <div className="alert alert-info">
-            Cargando equipos del servidor...
-          </div>
-        )}
-
-        {/* ERROR DE CONEXION */}
         {error && (
-          <div className="alert alert-danger">
+          <div className="alert alert-danger" role="alert">
             {error}
           </div>
         )}
 
-        {!cargando && !error && (
+        {mensaje && (
+          <div className="alert alert-success" role="status">
+            {mensaje}
+          </div>
+        )}
+
+        {cargando && (
+          <div className="alert alert-info">
+            Cargando equipos...
+          </div>
+        )}
+
+        {!cargando && (
           <>
 
-            {/* CONTADOR */}
             <div className="border rounded-3 p-3 mb-4">
 
               <p className="mb-1">
@@ -312,192 +310,162 @@ function ResumenEquiposApi() {
 
             </div>
 
-            {/* FORMULARIO */}
-            <div className="border border-secondary rounded-3 p-4 mb-4 bg-body-tertiary">
+            {puedeCrear && (
 
-              <h4 className="h5 mb-2 text-dark">
-                {editandoId !== null
-                  ? `Editar equipo N° ${editandoId}`
-                  : 'Crear equipo con API (EP3)'}
-              </h4>
+              <div className="border border-secondary rounded-3 p-4 mb-4 bg-body-tertiary formulario-ep3">
 
-              <p className="text-secondary mb-4">
-                {editandoId !== null
-                  ? 'Modifica los datos y guarda los cambios.'
-                  : 'Completa los datos para registrar un equipo.'}
-              </p>
+                <h4 className="h5 mb-3 text-dark">
+                  {editandoId === null
+                    ? 'Crear equipo con API (EP3)'
+                    : `Editar equipo N° ${editandoId}`}
+                </h4>
 
-              <form onSubmit={guardarEquipo} noValidate>
+                <form onSubmit={guardarEquipo} noValidate>
 
-                <div className="row g-4 text-start">
-
-                  {/* NOMBRE */}
-                  <div className="col-12 col-md-4">
-
-                    <label
-                      htmlFor="nombreEquipoApi"
-                      className="form-label fw-semibold d-block text-start text-dark"
-                    >
-                      Nombre del equipo
-                    </label>
-
-                    <input
-                      type="text"
-                      id="nombreEquipoApi"
-                      name="nombre"
-                      className="form-control form-control-lg bg-white border border-2 border-secondary text-dark"
-                      placeholder="Ej.: Equipo Prueba EP3"
-                      value={formulario.nombre}
-                      onChange={cambiarCampo}
-                      disabled={guardando}
-                    />
-
-                    <small className="text-secondary d-block mt-2 text-start">
-                      Ingresa un nombre que no esté registrado.
-                    </small>
-
-                  </div>
-
-                  {/* COACH */}
-                  <div className="col-12 col-md-4">
-
-                    <label
-                      htmlFor="coachEquipoApi"
-                      className="form-label fw-semibold d-block text-start text-dark"
-                    >
-                      Coach
-                    </label>
-
-                    <input
-                      type="text"
-                      id="coachEquipoApi"
-                      name="coach"
-                      className="form-control form-control-lg bg-white border border-2 border-secondary text-dark"
-                      placeholder="Ej.: Coach Principal"
-                      value={formulario.coach}
-                      onChange={cambiarCampo}
-                      disabled={guardando}
-                    />
-
-                    <small className="text-secondary d-block mt-2 text-start">
-                      Escribe el nombre del entrenador.
-                    </small>
-
-                  </div>
-
-                  {/* VIDEOJUEGO */}
-                  <div className="col-12 col-md-4">
-
-                    <label
-                      htmlFor="juegoEquipoApi"
-                      className="form-label fw-semibold d-block text-start text-dark"
-                    >
-                      Videojuego
-                    </label>
-
-                    <select
-                      id="juegoEquipoApi"
-                      name="juegoId"
-                      className="form-select form-select-lg bg-white border border-2 border-secondary text-dark"
-                      value={formulario.juegoId}
-                      onChange={cambiarCampo}
-                      disabled={guardando}
-                    >
-
-                      <option value="">
-                        Selecciona un videojuego
-                      </option>
-
-                      {juegos.map((juego) => (
-                        <option key={juego.id} value={juego.id}>
-                          {juego.nombre}
-                        </option>
-                      ))}
-
-                    </select>
-
-                    <small className="text-secondary d-block mt-2 text-start">
-                      Selecciona un juego registrado en la API.
-                    </small>
-
-                  </div>
-
-                  {/* ESTADO DEL EQUIPO */}
-                  {editandoId !== null && (
+                  <div className="row g-3 text-start">
 
                     <div className="col-12 col-md-4">
 
                       <label
-                        htmlFor="estadoEquipoApi"
-                        className="form-label fw-semibold d-block text-start text-dark"
+                        htmlFor="nombreEquipoApi"
+                        className="form-label text-dark"
                       >
-                        Estado del equipo
+                        Nombre del equipo
+                      </label>
+
+                      <input
+                        id="nombreEquipoApi"
+                        name="nombre"
+                        className="form-control"
+                        value={formulario.nombre}
+                        onChange={cambiarCampo}
+                        disabled={guardando}
+                      />
+
+                    </div>
+
+                    <div className="col-12 col-md-4">
+
+                      <label
+                        htmlFor="coachEquipoApi"
+                        className="form-label text-dark"
+                      >
+                        Coach
+                      </label>
+
+                      <input
+                        id="coachEquipoApi"
+                        name="coach"
+                        className="form-control"
+                        value={formulario.coach}
+                        onChange={cambiarCampo}
+                        disabled={guardando}
+                      />
+
+                    </div>
+
+                    <div className="col-12 col-md-4">
+
+                      <label
+                        htmlFor="juegoEquipoApi"
+                        className="form-label text-dark"
+                      >
+                        Videojuego
                       </label>
 
                       <select
-                        id="estadoEquipoApi"
-                        name="estado"
-                        className="form-select form-select-lg bg-white border border-2 border-secondary text-dark"
-                        value={formulario.estado}
+                        id="juegoEquipoApi"
+                        name="juegoId"
+                        className="form-select"
+                        value={formulario.juegoId}
                         onChange={cambiarCampo}
                         disabled={guardando}
                       >
-                        <option value="ACTIVO">ACTIVO</option>
-                        <option value="INACTIVO">INACTIVO</option>
+
+                        <option value="">
+                          Selecciona un videojuego
+                        </option>
+
+                        {juegos.map((juego) => (
+                          <option key={juego.id} value={juego.id}>
+                            {juego.nombre}
+                          </option>
+                        ))}
+
                       </select>
 
                     </div>
 
-                  )}
+                    {editandoId !== null && (
 
-                </div>
+                      <div className="col-12 col-md-4">
 
-                {/* BOTONES */}
-                <div className="d-flex justify-content-center gap-2 mt-4">
+                        <label
+                          htmlFor="estadoEquipoApi"
+                          className="form-label text-dark"
+                        >
+                          Estado del equipo
+                        </label>
 
-                  <button
-                    type="submit"
-                    className="btn btn-primary px-4 py-2"
-                    disabled={guardando || eliminandoId !== null}
-                  >
-                    {guardando
-                      ? 'Guardando...'
-                      : editandoId !== null
-                        ? 'Guardar cambios'
-                        : 'Crear equipo en el servidor'}
-                  </button>
+                        <select
+                          id="estadoEquipoApi"
+                          name="estado"
+                          className="form-select"
+                          value={formulario.estado}
+                          onChange={cambiarCampo}
+                          disabled={guardando}
+                        >
+                          <option value="ACTIVO">ACTIVO</option>
+                          <option value="INACTIVO">INACTIVO</option>
+                        </select>
 
-                  {editandoId !== null && (
+                      </div>
+
+                    )}
+
+                  </div>
+
+                  <div className="d-flex justify-content-center gap-2 mt-4">
+
                     <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={cancelarEdicion}
+                      type="submit"
+                      className="btn btn-primary"
                       disabled={guardando || eliminandoId !== null}
                     >
-                      Cancelar edición
+                      {guardando
+                        ? 'Guardando...'
+                        : editandoId === null
+                          ? 'Crear equipo en el servidor'
+                          : 'Guardar cambios'}
                     </button>
-                  )}
 
-                </div>
+                    {editandoId !== null && (
 
-              </form>
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={limpiarFormulario}
+                        disabled={guardando}
+                      >
+                        Cancelar edición
+                      </button>
 
-            </div>
+                    )}
 
-            {/* MENSAJES */}
-            {errorFormulario && (
-              <div className="alert alert-danger" role="alert">
-                {errorFormulario}
+                  </div>
+
+                </form>
+
+              </div>
+
+            )}
+
+            {!puedeCrear && (
+              <div className="alert alert-info">
+                Inicia sesión para crear un equipo.
               </div>
             )}
 
-            {mensaje && (
-              <div className="alert alert-success" role="status">
-                {mensaje}
-              </div>
-            )}
-
-            {/* LISTADO DE EQUIPOS */}
             <h4 className="h5 mb-3">
               Listado de equipos del servidor
             </h4>
@@ -505,7 +473,7 @@ function ResumenEquiposApi() {
             {equipos.length === 0 ? (
 
               <div className="alert alert-info">
-                No hay equipos registrados en el servidor.
+                No hay equipos registrados.
               </div>
 
             ) : (
@@ -521,36 +489,36 @@ function ResumenEquiposApi() {
                       <th>Coach</th>
                       <th>Juego</th>
                       <th>Estado</th>
+                      <th>Propiedad</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
 
                   <tbody>
 
-                    {equipos.map((equipo) => {
+                    {equipos.map((equipo) => (
 
-                      const juego = juegos.find(
-                        (item) =>
-                          Number(item.id) === Number(equipo.juegoId)
-                      )
+                      <tr key={equipo.id}>
 
-                      return (
-                        <tr key={equipo.id}>
+                        <td>{equipo.id}</td>
+                        <td>{equipo.nombre}</td>
+                        <td>{equipo.coach}</td>
+                        <td>{nombreJuego(equipo.juegoId)}</td>
+                        <td>{equipo.estado}</td>
 
-                          <td>{equipo.id}</td>
-                          <td>{equipo.nombre}</td>
-                          <td>{equipo.coach}</td>
+                        <td>
+                          {esPropietario(equipo)
+                            ? 'Mi equipo'
+                            : equipo.authId == null
+                              ? 'Sin propietario asignado'
+                              : 'Otro jugador'}
+                        </td>
 
-                          <td>
-                            {juego
-                              ? juego.nombre
-                              : `Juego ID ${equipo.juegoId}`}
-                          </td>
+                        <td>
 
-                          <td>{equipo.estado}</td>
+                          {puedeAdministrar(equipo) ? (
 
-                          <td>
-                            <div className="d-flex justify-content-center gap-2">
+                            <div className="d-flex flex-wrap gap-2">
 
                               <button
                                 type="button"
@@ -573,11 +541,18 @@ function ResumenEquiposApi() {
                               </button>
 
                             </div>
-                          </td>
 
-                        </tr>
-                      )
-                    })}
+                          ) : (
+                            <span className="text-secondary">
+                              Solo consulta
+                            </span>
+                          )}
+
+                        </td>
+
+                      </tr>
+
+                    ))}
 
                   </tbody>
 

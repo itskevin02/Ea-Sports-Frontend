@@ -25,11 +25,10 @@ function App() {
   const [torneoSeleccionado, setTorneoSeleccionado] = useState(null)
 
   const vistasProtegidas = [
-    'inscripcion',
-    'equipos',
-    'perfil',
-    'administracion'
-  ]
+  'inscripcion',
+  'perfil',
+  'administracion'
+]
 
   function cambiarVista(vista) {
     if (!autenticado && vistasProtegidas.includes(vista)) {
