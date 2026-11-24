@@ -4,5 +4,5 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/Ea-Sports-Frontend/'
+  base: process.env.VERCEL ? '/' : '/Ea-Sports-Frontend/'
 })
